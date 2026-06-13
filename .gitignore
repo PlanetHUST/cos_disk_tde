@@ -1,0 +1,5 @@
+__pycache__/
+doc/
+tde_dyn_results/
+*txt
+*md
