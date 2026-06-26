@@ -5,7 +5,17 @@ import time
 from pathlib import Path
 from typing import Sequence
 
-from .config import SECONDS_PER_MINUTE, TDEDynConfig
+from .config import (
+    AVERAGED_RESULTS_FILENAME,
+    SECONDS_PER_MINUTE,
+    TIMESCALES_FILENAME,
+    VISUALIZATION_DIRECTORY,
+    TDEDynConfig,
+)
+from .outputs import (
+    create_timescale_histograms_from_csv,
+    create_visualizations_from_csv,
+)
 from .workflow import run_simulation
 
 
@@ -81,12 +91,39 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="suppress detailed per-realization counters",
     )
+    parser.add_argument(
+        "--plot-only",
+        nargs="?",
+        const=Path("./tde_dyn_results"),
+        type=Path,
+        metavar="PATH",
+        help=(
+            "skip simulation and regenerate all figures from an output "
+            "directory (default: ./tde_dyn_results)"
+        ),
+    )
     return parser
 
 
 def run_cli(argv: Sequence[str] | None = None) -> None:
     """Parse command-line arguments and run the simulation."""
     arguments = build_parser().parse_args(argv)
+    if arguments.plot_only is not None:
+        output_dir = arguments.plot_only
+        if output_dir.suffix.lower() == ".csv":
+            output_dir = output_dir.parent
+        visualization_dir = output_dir / VISUALIZATION_DIRECTORY
+        visualization_dir.mkdir(parents=True, exist_ok=True)
+        create_visualizations_from_csv(
+            output_dir / AVERAGED_RESULTS_FILENAME,
+            visualization_dir,
+        )
+        create_timescale_histograms_from_csv(
+            output_dir / TIMESCALES_FILENAME,
+            visualization_dir,
+        )
+        return
+
     config = TDEDynConfig(
         num_samp=arguments.num_samples,
         num_repeats=arguments.num_repeats,

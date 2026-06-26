@@ -24,7 +24,14 @@ VISUALIZATION_DIRECTORY = "visualizations"
 RATE_VS_SMBH_PLOT_FILENAME = "tde_dyn_rate_vs_smbh.png"
 RATE_HEATMAP_FILENAME = "tde_dyn_rate_heatmap.png"
 GEOMETRIC_FRACTION_HEATMAP_FILENAME = "tde_dyn_fgeo_heatmap.png"
-TIMESCALE_HISTOGRAM_FILENAME = "timescale_histograms.png"
+PRIMARY_TIMESCALE_HISTOGRAM_FILENAME = (
+    "timescale_histograms_primary.png"
+)
+COPY_TIMESCALE_HISTOGRAM_FILENAME = "timescale_histograms_copies.png"
+COMBINED_TIMESCALE_HISTOGRAM_FILENAME = (
+    "timescale_histograms_primary_and_copies.png"
+)
+TIMESCALE_HISTOGRAM_FILENAME = PRIMARY_TIMESCALE_HISTOGRAM_FILENAME
 
 
 class TDEDynConfig:

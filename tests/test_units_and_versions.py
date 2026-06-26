@@ -1,8 +1,11 @@
 """Regression checks for unit contracts and the consolidated entry point."""
 
+import io
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 import tempfile
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -39,6 +42,80 @@ class UnitContractTests(unittest.TestCase):
         self.assertEqual(arguments.damping_cpu_count, 3)
         self.assertTrue(arguments.no_resupply)
         self.assertEqual(arguments.duty_cycle_myr, 10.0)
+
+    def test_cli_can_regenerate_all_plots_without_simulating(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output_dir = Path(temporary_directory)
+            pd.DataFrame(
+                [
+                    {
+                        "task_kind": "primary",
+                        "damping_time_myr": 0.25,
+                        "migration_time_myr": 0.75,
+                        "relaxation_time_myr": 2.0,
+                        "delivery_time_myr": 1.0,
+                    },
+                    {
+                        "task_kind": "copy",
+                        "damping_time_myr": 0.5,
+                        "migration_time_myr": 1.5,
+                        "relaxation_time_myr": 3.0,
+                        "delivery_time_myr": 2.0,
+                    },
+                ]
+            ).to_csv(
+                output_dir / tde_rate.TIMESCALES_FILENAME,
+                index=False,
+            )
+            pd.DataFrame(
+                [
+                    {
+                        "m_smbh_msun": 1.0e4,
+                        "m_nsc_msun": 1.0e5,
+                        "tde_mass_rate_total_mean_msun_per_myr": 1.0,
+                        "f_geo_mean": 0.1,
+                    }
+                ]
+            ).to_csv(
+                output_dir / tde_rate.AVERAGED_RESULTS_FILENAME,
+                index=False,
+            )
+
+            with patch("src.tde_rate.cli.run_simulation") as simulation:
+                tde_rate.run_cli(["--plot-only", str(output_dir)])
+
+            simulation.assert_not_called()
+            plot_dir = output_dir / tde_rate.VISUALIZATION_DIRECTORY
+            self.assertTrue(
+                (plot_dir / tde_rate.RATE_VS_SMBH_PLOT_FILENAME).exists()
+            )
+            self.assertTrue(
+                (plot_dir / tde_rate.RATE_HEATMAP_FILENAME).exists()
+            )
+            self.assertTrue(
+                (
+                    plot_dir
+                    / tde_rate.GEOMETRIC_FRACTION_HEATMAP_FILENAME
+                ).exists()
+            )
+            self.assertTrue(
+                (
+                    plot_dir
+                    / tde_rate.PRIMARY_TIMESCALE_HISTOGRAM_FILENAME
+                ).exists()
+            )
+            self.assertTrue(
+                (
+                    plot_dir
+                    / tde_rate.COMBINED_TIMESCALE_HISTOGRAM_FILENAME
+                ).exists()
+            )
+            self.assertTrue(
+                (
+                    plot_dir
+                    / tde_rate.COPY_TIMESCALE_HISTOGRAM_FILENAME
+                ).exists()
+            )
 
     def test_project_constant_aliases_are_consistent(self) -> None:
         self.assertEqual(const.Myr, const.MEGAYEAR_S)
@@ -184,7 +261,9 @@ class UnitContractTests(unittest.TestCase):
                 [averaged_result], output_dir
             )
             csv_path = output_dir / tde_rate.TIMESCALES_FILENAME
-            statistics = tde_rate.print_timescale_statistics(csv_path)
+            printed = io.StringIO()
+            with redirect_stdout(printed):
+                statistics = tde_rate.print_timescale_statistics(csv_path)
             tde_rate.create_timescale_histograms_from_csv(
                 csv_path, plot_dir
             )
@@ -193,6 +272,9 @@ class UnitContractTests(unittest.TestCase):
                 list(frame.columns), list(tde_rate.TIMESCALE_COLUMNS)
             )
             self.assertEqual(len(statistics), 4)
+            self.assertIn("std_myr", statistics.columns)
+            self.assertIn("p25_myr", statistics.columns)
+            self.assertIn("positive_count", statistics.columns)
             self.assertEqual(
                 statistics.loc[
                     statistics["timescale"] == "damping_time_myr",
@@ -200,10 +282,67 @@ class UnitContractTests(unittest.TestCase):
                 ].iloc[0],
                 0.25,
             )
+            self.assertIn(
+                "Timescale statistics by task kind",
+                printed.getvalue(),
+            )
+            self.assertIn("Timescale outcome counts", printed.getvalue())
             self.assertTrue(
                 (
                     plot_dir
                     / tde_rate.TIMESCALE_HISTOGRAM_FILENAME
+                ).exists()
+            )
+            self.assertTrue(
+                (
+                    plot_dir
+                    / tde_rate.COMBINED_TIMESCALE_HISTOGRAM_FILENAME
+                ).exists()
+            )
+            self.assertTrue(
+                (
+                    plot_dir
+                    / tde_rate.COPY_TIMESCALE_HISTOGRAM_FILENAME
+                ).exists()
+            )
+
+    def test_timescale_histograms_allow_no_positive_values(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output_dir = Path(temporary_directory)
+            csv_path = output_dir / tde_rate.TIMESCALES_FILENAME
+            pd.DataFrame(
+                [
+                    {
+                        "task_kind": "primary",
+                        "damping_time_myr": 0.0,
+                        "migration_time_myr": np.nan,
+                        "relaxation_time_myr": -1.0,
+                        "delivery_time_myr": 0.0,
+                    }
+                ]
+            ).to_csv(csv_path, index=False)
+
+            tde_rate.create_timescale_histograms_from_csv(
+                csv_path,
+                output_dir,
+            )
+
+            self.assertTrue(
+                (
+                    output_dir
+                    / tde_rate.PRIMARY_TIMESCALE_HISTOGRAM_FILENAME
+                ).exists()
+            )
+            self.assertTrue(
+                (
+                    output_dir
+                    / tde_rate.COPY_TIMESCALE_HISTOGRAM_FILENAME
+                ).exists()
+            )
+            self.assertTrue(
+                (
+                    output_dir
+                    / tde_rate.COMBINED_TIMESCALE_HISTOGRAM_FILENAME
                 ).exists()
             )
 

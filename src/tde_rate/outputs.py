@@ -10,14 +10,18 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
+from constants import HUBBLE_TIME_MYR
+
 from .config import (
     AVERAGED_RESULTS_FILENAME,
+    COMBINED_TIMESCALE_HISTOGRAM_FILENAME,
+    COPY_TIMESCALE_HISTOGRAM_FILENAME,
     GEOMETRIC_FRACTION_HEATMAP_FILENAME,
     METADATA_FILENAME,
     NSC_RADIUS_REFERENCE_MASS_MSUN,
+    PRIMARY_TIMESCALE_HISTOGRAM_FILENAME,
     RATE_HEATMAP_FILENAME,
     RATE_VS_SMBH_PLOT_FILENAME,
-    TIMESCALE_HISTOGRAM_FILENAME,
     TIMESCALES_FILENAME,
 )
 from .config import TDEDynConfig
@@ -47,9 +51,7 @@ def save_timescales(
         for result in averaged_result.results
         for record in result.timescale_records
     ]
-    frame = pd.DataFrame.from_records(
-        records, columns=TIMESCALE_COLUMNS
-    )
+    frame = pd.DataFrame.from_records(records, columns=TIMESCALE_COLUMNS)
     path = output_dir / TIMESCALES_FILENAME
     frame.to_csv(path, index=False, float_format="%.6e")
     print(f"saved: {path}")
@@ -57,7 +59,7 @@ def save_timescales(
 
 
 def print_timescale_statistics(timescales_csv: Path) -> pd.DataFrame:
-    """Print robust summary statistics read from ``timescales.csv``."""
+    """Print descriptive timescale statistics read from ``timescales.csv``."""
     frame = pd.read_csv(timescales_csv)
     columns = {
         "damping_time_myr": "Damping",
@@ -65,93 +67,185 @@ def print_timescale_statistics(timescales_csv: Path) -> pd.DataFrame:
         "relaxation_time_myr": "Relaxation",
         "delivery_time_myr": "Delivery",
     }
+    counted_as_tde = _as_bool_series(frame["counted_as_tde"])
     rows: list[dict[str, float | int | str]] = []
     print("\nTimescale statistics [Myr]")
     print(
         f"  objects={len(frame)}, "
         f"primary={(frame['task_kind'] == 'primary').sum()}, "
         f"copies={(frame['task_kind'] == 'copy').sum()}, "
-        f"counted TDEs={frame['counted_as_tde'].astype(bool).sum()}"
+        f"counted TDEs={counted_as_tde.sum()}"
     )
     for column, label in columns.items():
-        values = pd.to_numeric(frame[column], errors="coerce")
-        values = values[np.isfinite(values) & (values >= 0.0)]
+        values = _valid_timescale_values(frame[column])
         if values.empty:
             print(f"  {label:<10}: no finite values")
             continue
+        positive_values = values[values > 0.0]
         row: dict[str, float | int | str] = {
             "timescale": column,
             "count": int(values.size),
+            "positive_count": int(positive_values.size),
             "min_myr": float(values.min()),
+            "p05_myr": float(values.quantile(0.05)),
             "p16_myr": float(values.quantile(0.16)),
+            "p25_myr": float(values.quantile(0.25)),
             "median_myr": float(values.median()),
             "mean_myr": float(values.mean()),
+            "std_myr": float(values.std(ddof=1)) if values.size > 1 else 0.0,
+            "p75_myr": float(values.quantile(0.75)),
             "p84_myr": float(values.quantile(0.84)),
             "p95_myr": float(values.quantile(0.95)),
             "max_myr": float(values.max()),
         }
+        if positive_values.empty:
+            row["log10_median_myr"] = np.nan
+        else:
+            row["log10_median_myr"] = float(
+                np.log10(positive_values).median()
+            )
         rows.append(row)
         print(
             f"  {label:<10}: n={values.size:<7d} "
+            f"positive={positive_values.size:<7d} "
             f"median={row['median_myr']:.3e}, "
             f"mean={row['mean_myr']:.3e}, "
+            f"std={row['std_myr']:.3e}, "
+            f"IQR={row['p25_myr']:.3e}-"
+            f"{row['p75_myr']:.3e}, "
             f"p16-p84={row['p16_myr']:.3e}-"
-            f"{row['p84_myr']:.3e}"
+            f"{row['p84_myr']:.3e}, "
+            f"p05-p95={row['p05_myr']:.3e}-"
+            f"{row['p95_myr']:.3e}"
         )
+    _print_grouped_timescale_statistics(frame, columns)
+    _print_timescale_outcome_counts(frame)
     return pd.DataFrame(rows)
+
+
+def _valid_timescale_values(series: pd.Series) -> pd.Series:
+    values = pd.to_numeric(series, errors="coerce")
+    return values[np.isfinite(values) & (values >= 0.0)]
+
+
+def _as_bool_series(series: pd.Series) -> pd.Series:
+    if pd.api.types.is_bool_dtype(series):
+        return series.fillna(False)
+    return series.astype(str).str.lower().isin(("true", "1", "yes"))
+
+
+def _format_group_timescale_summary(values: pd.Series) -> str:
+    values = _valid_timescale_values(values)
+    if values.empty:
+        return "no finite values"
+    return (
+        f"n={values.size}, "
+        f"median={values.median():.3e}, "
+        f"IQR={values.quantile(0.25):.3e}-{values.quantile(0.75):.3e}, "
+        f"p16-p84={values.quantile(0.16):.3e}-{values.quantile(0.84):.3e}"
+    )
+
+
+def _print_grouped_timescale_statistics(
+    frame: pd.DataFrame,
+    columns: dict[str, str],
+) -> None:
+    print("\nTimescale statistics by task kind [Myr]")
+    for task_kind in ("primary", "copy"):
+        selected = frame.loc[frame["task_kind"] == task_kind]
+        print(f"  {task_kind}: objects={len(selected)}")
+        if selected.empty:
+            continue
+        for column, label in columns.items():
+            print(
+                f"    {label:<10}: "
+                f"{_format_group_timescale_summary(selected[column])}"
+            )
+
+    counted = frame.loc[_as_bool_series(frame["counted_as_tde"])]
+    if counted.empty:
+        print("\nCounted TDE delivery times [Myr]: no counted TDEs")
+        return
+    print("\nCounted TDE delivery times by mode [Myr]")
+    group_columns = ["task_kind", "tde_mode"]
+    for group_key, selected in counted.groupby(group_columns, sort=True):
+        task_kind, tde_mode = group_key
+        print(
+            f"  {task_kind}/{tde_mode}: "
+            f"{_format_group_timescale_summary(selected['delivery_time_myr'])}"
+        )
+
+
+def _print_timescale_outcome_counts(frame: pd.DataFrame) -> None:
+    if "outcome" not in frame.columns:
+        return
+    print("\nTimescale outcome counts")
+    counts = (
+        frame.groupby(["task_kind", "outcome"], dropna=False)
+        .size()
+        .reset_index(name="count")
+        .sort_values(["task_kind", "count"], ascending=[True, False])
+    )
+    for row in counts.itertuples(index=False):
+        print(f"  {row.task_kind}/{row.outcome}: {row.count}")
 
 
 def create_timescale_histograms_from_csv(
     timescales_csv: Path,
     output_dir: Path,
 ) -> None:
-    """Create logarithmic histograms from persisted timescale data."""
+    """Create primary, copied, and combined timescale PDFs."""
     frame = pd.read_csv(timescales_csv)
-    panels = (
-        ("damping_time_myr", r"$t_{\rm damp}$"),
-        ("migration_time_myr", r"$t_{\rm mig}$"),
-        ("relaxation_time_myr", r"$t_{\rm relax}$"),
-        ("delivery_time_myr", r"$t_{\rm damp}+t_{\rm mig}$"),
+    series = (
+        ("damping_time_myr", r"$t_{\rm damp}$", "-", "tab:blue"),
+        ("migration_time_myr", r"$t_{\rm mig}$", "--", "tab:orange"),
+        ("relaxation_time_myr", r"$t_{\rm relax}$", "-.", "tab:green"),
+        (
+            "delivery_time_myr",
+            r"$t_{\rm tde}= t_{\rm damp}+t_{\rm mig}$",
+            ":",
+            "tab:red",
+        ),
     )
-    figure, axes = plt.subplots(2, 2, figsize=(12, 9))
-    for axis, (column, label) in zip(axes.flat, panels):
+    lower_log_time = -4.0
+    upper_log_time = float(np.log10(HUBBLE_TIME_MYR))
+    bins = np.linspace(lower_log_time, upper_log_time, 36)
+
+    def create_figure(
+        selected: pd.DataFrame,
+        title: str,
+        filename: str,
+    ) -> None:
+        figure, axis = plt.subplots(figsize=(10, 6))
+        log_series: list[tuple[np.ndarray, str, str, str]] = []
+        for column, label, linestyle, color in series:
+            values = pd.to_numeric(selected[column], errors="coerce").to_numpy(
+                dtype=float
+            )
+            values = values[
+                np.isfinite(values)
+                & (values >= 10.0**lower_log_time)
+                & (values <= HUBBLE_TIME_MYR)
+            ]
+            if values.size:
+                log_series.append((np.log10(values), label, linestyle, color))
+
         plotted = False
-        all_values = pd.to_numeric(frame[column], errors="coerce")
-        positive = all_values[np.isfinite(all_values) & (all_values > 0.0)]
-        if not positive.empty:
-            minimum = float(positive.min())
-            maximum = float(positive.max())
-            if np.isclose(minimum, maximum):
-                bins = np.logspace(
-                    np.log10(minimum) - 0.25,
-                    np.log10(maximum) + 0.25,
-                    12,
+        if log_series:
+            for values, label, linestyle, color in log_series:
+                axis.hist(
+                    values,
+                    bins=bins,
+                    density=True,
+                    histtype="step",
+                    linewidth=2.0,
+                    linestyle=linestyle,
+                    color=color,
+                    label=f"{label}",
                 )
-            else:
-                bins = np.logspace(
-                    np.log10(minimum), np.log10(maximum), 31
-                )
-            for task_kind, color in (
-                ("primary", "tab:blue"),
-                ("copy", "tab:orange"),
-            ):
-                values = pd.to_numeric(
-                    frame.loc[frame["task_kind"] == task_kind, column],
-                    errors="coerce",
-                )
-                values = values[
-                    np.isfinite(values) & (values > 0.0)
-                ]
-                if not values.empty:
-                    axis.hist(
-                        values,
-                        bins=bins,
-                        alpha=0.65,
-                        label=task_kind,
-                        color=color,
-                    )
-                    plotted = True
-            axis.set_xscale("log")
+                plotted = True
+
+        axis.set_xlim(lower_log_time, upper_log_time)
         if not plotted:
             axis.text(
                 0.5,
@@ -161,18 +255,45 @@ def create_timescale_histograms_from_csv(
                 va="center",
                 transform=axis.transAxes,
             )
-        axis.set_xlabel(f"{label} [Myr]")
-        axis.set_ylabel("Object count")
-        axis.grid(True, alpha=0.25, linestyle="--")
+        axis.set_xlabel(r"$\log_{10}(t/{\rm Myr})$", fontsize=16)
+        axis.set_ylabel("Probability density function", fontsize=16)
+        # axis.set_yscale("log")
+        axis.tick_params(axis="both", which="major", labelsize=14)
+        # axis.set_title(title, fontsize=20, pad=14)
+        axis.grid(True, which="both", alpha=0.5, linestyle=":", linewidth=1.0)
+        axis.spines["top"].set_visible(False)
+        axis.spines["right"].set_visible(False)
         if plotted:
-            axis.legend()
-    figure.suptitle("TDE workflow timescale distributions")
-    figure.tight_layout()
+            _, upper_y = axis.get_ylim()
+            axis.set_ylim(1e-4, upper_y * 1.05)
+            axis.legend(
+                loc="best",
+                frameon=False,
+                ncols=1,
+                fontsize=16,
+            )
+        figure.tight_layout()
+        path = output_dir / filename
+        figure.savefig(path, dpi=200, bbox_inches="tight")
+        plt.close(figure)
+        print(f"saved: {path}")
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    path = output_dir / TIMESCALE_HISTOGRAM_FILENAME
-    figure.savefig(path, dpi=150, bbox_inches="tight")
-    plt.close(figure)
-    print(f"saved: {path}")
+    create_figure(
+        frame.loc[frame["task_kind"] == "primary"],
+        "Timescale distributions: primary objects",
+        PRIMARY_TIMESCALE_HISTOGRAM_FILENAME,
+    )
+    create_figure(
+        frame.loc[frame["task_kind"] == "copy"],
+        "Timescale distributions: copied objects",
+        COPY_TIMESCALE_HISTOGRAM_FILENAME,
+    )
+    create_figure(
+        frame.loc[frame["task_kind"].isin(("primary", "copy"))],
+        "Timescale distributions: primary and copied objects",
+        COMBINED_TIMESCALE_HISTOGRAM_FILENAME,
+    )
 
 
 def save_metadata(
