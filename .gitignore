@@ -3,5 +3,6 @@ doc/
 tde_dyn_results/
 out.txt
 *md
+!README.md
 .codex/
 .agents/
