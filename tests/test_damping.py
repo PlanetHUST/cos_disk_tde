@@ -86,6 +86,18 @@ class DampTest(unittest.TestCase):
         np.testing.assert_allclose(inner_radius_cm, [10.0, 100.0])
         np.testing.assert_allclose(outer_radius_cm, [10.0, 100.0])
 
+    def test_nsc_radius_model_uses_config_values(self) -> None:
+        config = tde_rate.TDEDynConfig(
+            nsc_radius_pc_at_reference_mass=2.0,
+            nsc_radius_reference_mass_msun=4.0,
+            nsc_radius_mass_slope=0.5,
+        )
+        engine = tde_rate.TDEDynEngine(config)
+
+        radius_cm = engine.estimate_nsc_radius_cm(16.0)
+
+        self.assertAlmostEqual(radius_cm, 4.0 * const.parsec)
+
     def test_time_offset(self) -> None:
         damping_simulation = Mock(return_value=(3.0 * const.Myr, 2.0e15, 0))
         original_calculator = workers._WORKER_CALCULATOR

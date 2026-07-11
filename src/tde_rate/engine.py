@@ -14,8 +14,6 @@ from .config import (
     DISK_ACCRETION_RATE_G_S_PER_MSUN,
     DISK_INNER_RADIUS_RG,
     MIN_RELAXATION_TIME_MYR,
-    NSC_RADIUS_LOG10_OFFSET,
-    NSC_RADIUS_REFERENCE_MASS_MSUN,
     YEARS_PER_MYR,
     TDEDynConfig,
 )
@@ -46,17 +44,15 @@ class TDEDynEngine:
         """Estimate NSC radius [cm] from NSC mass [Msun]."""
         nsc_radius_pc = (
             self.config.nsc_radius_pc_at_reference_mass
-            * (m_nsc_msun / NSC_RADIUS_REFERENCE_MASS_MSUN)
+            * (m_nsc_msun / self.config.nsc_radius_reference_mass_msun)
             ** self.config.nsc_radius_mass_slope
-        ) * 10**NSC_RADIUS_LOG10_OFFSET
+        )
         return float(nsc_radius_pc * const.parsec)
 
     def get_disk_profiles(self, m_smbh_msun: float) -> DiskProfiles:
         """Return cached disk profiles for an SMBH mass [Msun]."""
         if m_smbh_msun not in self.disk_cache:
-            accretion_rate_g_s = (
-                DISK_ACCRETION_RATE_G_S_PER_MSUN * m_smbh_msun
-            )
+            accretion_rate_g_s = DISK_ACCRETION_RATE_G_S_PER_MSUN * m_smbh_msun
             (
                 outer_radius_cm,
                 radius_cm,
@@ -68,22 +64,16 @@ class TDEDynEngine:
                 _sound_speed_cm_s,
                 _density_g_cm3,
             ) = disk.radial_structure(m_smbh_msun, accretion_rate_g_s)
-            gravitational_radius_cm = (
-                const.G * m_smbh_msun * const.msun / const.c**2
-            )
+            gravitational_radius_cm = const.G * m_smbh_msun * const.msun / const.c**2
             self.disk_cache[m_smbh_msun] = {
                 "inner_radius_cm": float(
                     DISK_INNER_RADIUS_RG * gravitational_radius_cm
                 ),
                 "outer_radius_cm": float(outer_radius_cm),
                 "radius_cm": np.asarray(radius_cm, dtype=float),
-                "surface_density_g_cm2": np.asarray(
-                    surface_density_g_cm2, dtype=float
-                ),
+                "surface_density_g_cm2": np.asarray(surface_density_g_cm2, dtype=float),
                 "aspect_ratio": np.asarray(aspect_ratio, dtype=float),
-                "gravitational_radius_cm": float(
-                    gravitational_radius_cm
-                ),
+                "gravitational_radius_cm": float(gravitational_radius_cm),
             }
             vprint(f"  cached disk for M_SMBH={m_smbh_msun:.3e} Msun")
         return self.disk_cache[m_smbh_msun]
@@ -119,10 +109,8 @@ class TDEDynEngine:
         self, m_smbh_msun: float, m_nsc_msun: float
     ) -> StellarPopulation:
         """Sample stellar masses, lifetimes, and orbital elements."""
-        stellar_mass_msun, stellar_lifetime_yr = (
-            stellar_sampling.sample_efficient(
-                m_nsc_msun, Z=self.config.metallicity
-            )
+        stellar_mass_msun, stellar_lifetime_yr = stellar_sampling.sample_efficient(
+            m_nsc_msun, Z=self.config.metallicity
         )
         nsc_radius_cm = self.estimate_nsc_radius_cm(m_nsc_msun)
         (
@@ -140,9 +128,7 @@ class TDEDynEngine:
             "formation_time_myr": np.asarray(
                 stellar_lifetime_yr / YEARS_PER_MYR, dtype=float
             ),
-            "semi_major_axis_cm": np.asarray(
-                semi_major_axis_cm, dtype=float
-            ),
+            "semi_major_axis_cm": np.asarray(semi_major_axis_cm, dtype=float),
             "eccentricity": np.asarray(eccentricity, dtype=float),
             "inclination_rad": np.asarray(inclination_rad, dtype=float),
             "cos_omega": np.asarray(cos_omega, dtype=float),
@@ -161,22 +147,12 @@ class TDEDynEngine:
                     "idx": index,
                     "origin_primary_idx": -1,
                     "copy_number": -1,
-                    "mass_g": float(
-                        geo_pool["mass_msun"][index] * const.msun
-                    ),
-                    "semi_major_axis_cm": float(
-                        geo_pool["semi_major_axis_cm"][index]
-                    ),
-                    "eccentricity": float(
-                        geo_pool["eccentricity"][index]
-                    ),
-                    "inclination_rad": float(
-                        geo_pool["inclination_rad"][index]
-                    ),
+                    "mass_g": float(geo_pool["mass_msun"][index] * const.msun),
+                    "semi_major_axis_cm": float(geo_pool["semi_major_axis_cm"][index]),
+                    "eccentricity": float(geo_pool["eccentricity"][index]),
+                    "inclination_rad": float(geo_pool["inclination_rad"][index]),
                     "cos_omega": float(geo_pool["cos_omega"][index]),
-                    "formation_time_myr": float(
-                        geo_pool["formation_time_myr"][index]
-                    ),
+                    "formation_time_myr": float(geo_pool["formation_time_myr"][index]),
                     "state_time_s": 0.0,
                     "type_flag": int(flags.type_flag[index]),
                 }
@@ -211,8 +187,7 @@ class TDEDynEngine:
             )
             remaining_time_myr = max(
                 0.0,
-                agn_properties.AGNlifetime
-                - result["final_time_myr"],
+                agn_properties.AGNlifetime - result["final_time_myr"],
             )
             copy_count = min(
                 int(np.ceil(remaining_time_myr / relaxation_time_myr)),
@@ -222,9 +197,7 @@ class TDEDynEngine:
             for copy_number in range(copy_count):
                 sampled_index = int(np.random.randint(0, population_size))
                 if self.config.reuse_same_orbit_for_copies:
-                    semi_major_axis_cm = result[
-                        "initial_semi_major_axis_cm"
-                    ]
+                    semi_major_axis_cm = result["initial_semi_major_axis_cm"]
                     eccentricity = result["eccentricity"]
                     inclination_rad = result["inclination_rad"]
                     cos_omega = result["cos_omega"]
@@ -232,15 +205,9 @@ class TDEDynEngine:
                     semi_major_axis_cm = float(
                         geo_pool["semi_major_axis_cm"][sampled_index]
                     )
-                    eccentricity = float(
-                        geo_pool["eccentricity"][sampled_index]
-                    )
-                    inclination_rad = float(
-                        geo_pool["inclination_rad"][sampled_index]
-                    )
-                    cos_omega = float(
-                        geo_pool["cos_omega"][sampled_index]
-                    )
+                    eccentricity = float(geo_pool["eccentricity"][sampled_index])
+                    inclination_rad = float(geo_pool["inclination_rad"][sampled_index])
+                    cos_omega = float(geo_pool["cos_omega"][sampled_index])
                 time_offset_myr = copy_number * relaxation_time_myr
                 tasks.append(
                     {
@@ -249,8 +216,7 @@ class TDEDynEngine:
                         "origin_primary_idx": result["idx"],
                         "copy_number": copy_number,
                         "mass_g": float(
-                            geo_pool["mass_msun"][sampled_index]
-                            * const.msun
+                            geo_pool["mass_msun"][sampled_index] * const.msun
                         ),
                         "semi_major_axis_cm": semi_major_axis_cm,
                         "eccentricity": eccentricity,
@@ -274,9 +240,7 @@ class TDEDynEngine:
     ) -> None:
         result.tde_star_count_primary += 1
         result.tde_mass_primary_msun += damping_result["mass_msun"]
-        result.tde_masses_primary_msun.append(
-            damping_result["mass_msun"]
-        )
+        result.tde_masses_primary_msun.append(damping_result["mass_msun"])
         result.tde_times_primary_myr.append(float(event_time_myr))
 
     def _record_copy_tde(
@@ -287,9 +251,7 @@ class TDEDynEngine:
     ) -> None:
         result.num_copy_tdes += 1
         result.copy_tde_mass_msun += damping_result["mass_msun"]
-        result.tde_masses_copies_msun.append(
-            damping_result["mass_msun"]
-        )
+        result.tde_masses_copies_msun.append(damping_result["mass_msun"])
         result.tde_times_copies_myr.append(float(event_time_myr))
 
     def _append_timescale_record(
@@ -312,24 +274,16 @@ class TDEDynEngine:
             "repeat": result.repeat_idx,
             "task_kind": damping_result["task_kind"],
             "object_index": damping_result["idx"],
-            "origin_primary_index": damping_result[
-                "origin_primary_idx"
-            ],
+            "origin_primary_index": damping_result["origin_primary_idx"],
             "copy_number": damping_result["copy_number"],
             "object_type_flag": damping_result["obj_type"],
             "mass_msun": damping_result["mass_msun"],
-            "initial_semi_major_axis_cm": damping_result[
-                "initial_semi_major_axis_cm"
-            ],
-            "final_semi_major_axis_cm": damping_result[
-                "final_semi_major_axis_cm"
-            ],
+            "initial_semi_major_axis_cm": damping_result["initial_semi_major_axis_cm"],
+            "final_semi_major_axis_cm": damping_result["final_semi_major_axis_cm"],
             "eccentricity": damping_result["eccentricity"],
             "inclination_rad": damping_result["inclination_rad"],
             "state_time_myr": damping_result["state_time_myr"],
-            "formation_time_myr": damping_result[
-                "formation_time_myr"
-            ],
+            "formation_time_myr": damping_result["formation_time_myr"],
             "damping_time_myr": damping_result["damping_time_myr"],
             "migration_time_myr": migration_time_myr,
             "relaxation_time_myr": relaxation_time_myr,
@@ -359,14 +313,9 @@ class TDEDynEngine:
         outside = 0
 
         for damping_result in primary_results:
-            relaxation_time_myr = float(
-                relaxation_time_myr_geo[damping_result["idx"]]
-            )
+            relaxation_time_myr = float(relaxation_time_myr_geo[damping_result["idx"]])
             if damping_result["obj_type"] == 0:
-                if (
-                    damping_result["final_semi_major_axis_cm"]
-                    < tde_radius_cm
-                ):
+                if damping_result["final_semi_major_axis_cm"] < tde_radius_cm:
                     if self.config.direct_tde:
                         result.direct_tde_primary_count += 1
                         self._record_primary_tde(
@@ -401,14 +350,11 @@ class TDEDynEngine:
                         r_list=radius_cm,
                     )
                     event_time_myr = (
-                        migration_time_myr
-                        + damping_result["final_time_myr"]
+                        migration_time_myr + damping_result["final_time_myr"]
                     )
                     if event_time_myr < agn_properties.AGNlifetime:
                         result.migration_tde_primary_count += 1
-                        self._record_primary_tde(
-                            result, damping_result, event_time_myr
-                        )
+                        self._record_primary_tde(result, damping_result, event_time_myr)
                         outcome = "migration_tde"
                         counted_as_tde = True
                         tde_mode = "migration"
@@ -426,10 +372,7 @@ class TDEDynEngine:
                         tde_mode,
                     )
             elif damping_result["obj_type"] == 1:
-                if (
-                    damping_result["final_semi_major_axis_cm"]
-                    >= tde_radius_cm
-                ):
+                if damping_result["final_semi_major_axis_cm"] >= tde_radius_cm:
                     embedded_bh += 1
                 self._append_timescale_record(
                     result,
@@ -463,9 +406,7 @@ class TDEDynEngine:
 
         for damping_result in copies:
             relaxation_time_myr = float(
-                relaxation_time_myr_geo[
-                    damping_result["origin_primary_idx"]
-                ]
+                relaxation_time_myr_geo[damping_result["origin_primary_idx"]]
             )
             if damping_result["obj_type"] != 0:
                 self._append_timescale_record(
@@ -482,10 +423,7 @@ class TDEDynEngine:
                     "none",
                 )
                 continue
-            if (
-                damping_result["final_semi_major_axis_cm"]
-                < tde_radius_cm
-            ):
+            if damping_result["final_semi_major_axis_cm"] < tde_radius_cm:
                 if self.config.direct_tde:
                     result.direct_tde_copy_count += 1
                     self._record_copy_tde(
@@ -519,15 +457,10 @@ class TDEDynEngine:
                     sigma_list=surface_density_g_cm2,
                     h_list=aspect_ratio,
                 )
-                event_time_myr = (
-                    migration_time_myr
-                    + damping_result["final_time_myr"]
-                )
+                event_time_myr = migration_time_myr + damping_result["final_time_myr"]
                 if event_time_myr < agn_properties.AGNlifetime:
                     result.migration_tde_copy_count += 1
-                    self._record_copy_tde(
-                        result, damping_result, event_time_myr
-                    )
+                    self._record_copy_tde(result, damping_result, event_time_myr)
                     outcome = "migration_tde"
                     counted_as_tde = True
                     tde_mode = "migration"
@@ -549,30 +482,21 @@ class TDEDynEngine:
             result.tde_star_count_primary + result.num_copy_tdes
         )
         result.tde_mass_total_msun = (
-            result.tde_mass_primary_msun
-            + result.copy_tde_mass_msun
+            result.tde_mass_primary_msun + result.copy_tde_mass_msun
         )
         result.tde_mass_rate_total_msun_per_myr = (
             result.tde_mass_total_msun / self.duty_cycle_myr
         )
         vprint(f" embedded stars primary: {embedded_stars_primary}")
         vprint(f" embedded stars copies: {embedded_stars_copies}")
-        vprint(
-            f" tde masses primary: "
-            f"{result.tde_mass_primary_msun:.3e} Msun"
-        )
-        vprint(
-            f" tde masses copies: "
-            f"{result.copy_tde_mass_msun:.3e} Msun"
-        )
+        vprint(f" tde masses primary: " f"{result.tde_mass_primary_msun:.3e} Msun")
+        vprint(f" tde masses copies: " f"{result.copy_tde_mass_msun:.3e} Msun")
 
     def run_single_simulation(
         self, m_smbh_msun: float, m_nsc_msun: float, repeat_idx: int
     ) -> TDEDynSingleResult:
         """Run one Monte Carlo realization."""
-        result = TDEDynSingleResult(
-            m_smbh_msun, m_nsc_msun, repeat_idx
-        )
+        result = TDEDynSingleResult(m_smbh_msun, m_nsc_msun, repeat_idx)
         cpu_count = (
             self.config.damping_cpu_count
             if self.config.damping_cpu_count is not None
@@ -591,9 +515,7 @@ class TDEDynEngine:
             f"{disk_data['outer_radius_cm']/const.parsec:.3e} pc"
         )
 
-        population = self.sample_full_population(
-            m_smbh_msun, m_nsc_msun
-        )
+        population = self.sample_full_population(m_smbh_msun, m_nsc_msun)
         result.nsc_radius_cm = population["nsc_radius_cm"]
         result.total_stars = len(population["mass_msun"])
         mask, _, _ = self.select_disk_crossing_stars(
@@ -620,37 +542,23 @@ class TDEDynEngine:
 
         geo_pool: GeometricPopulation = {
             "mass_msun": population["mass_msun"][selected_indices],
-            "formation_time_myr": population["formation_time_myr"][
-                selected_indices
-            ],
-            "semi_major_axis_cm": population["semi_major_axis_cm"][
-                selected_indices
-            ],
-            "eccentricity": population["eccentricity"][
-                selected_indices
-            ],
-            "inclination_rad": population["inclination_rad"][
-                selected_indices
-            ],
+            "formation_time_myr": population["formation_time_myr"][selected_indices],
+            "semi_major_axis_cm": population["semi_major_axis_cm"][selected_indices],
+            "eccentricity": population["eccentricity"][selected_indices],
+            "inclination_rad": population["inclination_rad"][selected_indices],
             "cos_omega": population["cos_omega"][selected_indices],
         }
         relaxation_time_myr_geo = (
             np.asarray(
                 [
-                    helpers.t_relax(
-                        agn_properties.M_SMBH, orbit_radius_cm
-                    )
-                    for orbit_radius_cm in geo_pool[
-                        "semi_major_axis_cm"
-                    ]
+                    helpers.t_relax(agn_properties.M_SMBH, orbit_radius_cm)
+                    for orbit_radius_cm in geo_pool["semi_major_axis_cm"]
                 ],
                 dtype=float,
             )
             / const.Myr
         )
-        result.mean_relaxation_time_myr_geo = float(
-            np.mean(relaxation_time_myr_geo)
-        )
+        result.mean_relaxation_time_myr_geo = float(np.mean(relaxation_time_myr_geo))
         vprint(
             "Relaxation times initialized, mean_trel_myr_geo = "
             f"{result.mean_relaxation_time_myr_geo:.3e} Myr"
