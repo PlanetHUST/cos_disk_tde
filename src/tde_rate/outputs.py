@@ -23,7 +23,6 @@ from .config import (
 from .config import TDEDynConfig
 from .models import TDEDynAveragedResult
 
-
 RESULT_COLUMNS = (
     "m_smbh_msun",
     "m_nsc_msun",
@@ -112,9 +111,7 @@ def print_timescale_statistics(timescales_csv: Path) -> pd.DataFrame:
     rows = []
     for task_kind in ("primary", "copy", "total"):
         selected = (
-            frame
-            if task_kind == "total"
-            else frame[frame["task_kind"] == task_kind]
+            frame if task_kind == "total" else frame[frame["task_kind"] == task_kind]
         )
         row = {
             "task_kind": task_kind,
@@ -154,12 +151,10 @@ def create_timescale_histograms_from_csv(
                 (selected["m_smbh_msun"] == grid_point.m_smbh_msun)
                 & (selected["m_nsc_msun"] == grid_point.m_nsc_msun)
             ]
-            median_mass, lower_mass, upper_mass = (
-                _cumulative_mass_statistics(
-                    grid_events,
-                    time_grid_myr,
-                    num_repeats,
-                )
+            median_mass, lower_mass, upper_mass = _cumulative_mass_statistics(
+                grid_events,
+                time_grid_myr,
+                num_repeats,
             )
             (line,) = axis.plot(
                 time_grid_myr,
@@ -192,6 +187,7 @@ def create_timescale_histograms_from_csv(
         axis.set_xlabel(r"TDE event time $t\,[{\rm Myr}]$", fontsize=16)
         axis.set_ylabel(r"Cumulative TDE mass $[M_\odot]$", fontsize=16)
         axis.set_xlim(0.0, duty_cycle_myr)
+        axis.set_yscale("log")
         axis.tick_params(axis="both", which="major", labelsize=14)
         axis.set_title(title, fontsize=18, pad=14)
         axis.grid(True, which="both", alpha=0.5, linestyle=":", linewidth=1.0)
@@ -326,9 +322,7 @@ def save_metadata(
             ],
             "metallicity": config.metallicity,
             "nsc_radius_pc_at_reference_mass": (config.nsc_radius_pc_at_reference_mass),
-            "nsc_radius_reference_mass_msun": (
-                config.nsc_radius_reference_mass_msun
-            ),
+            "nsc_radius_reference_mass_msun": (config.nsc_radius_reference_mass_msun),
             "nsc_radius_mass_slope": config.nsc_radius_mass_slope,
             "dyn_resupply": config.dyn_resupply,
             "max_copies_per_object": config.max_copies_per_object,
@@ -356,11 +350,9 @@ def create_visualizations_from_csv(csv_file: Path, output_dir: Path) -> None:
         return
 
     rate_column = "tde_mass_rate_total_mean_msun_per_myr"
-    frame = (
-        frame.groupby(["m_smbh_msun", "m_nsc_msun"], as_index=False)
-        [rate_column]
-        .mean()
-    )
+    frame = frame.groupby(["m_smbh_msun", "m_nsc_msun"], as_index=False)[
+        rate_column
+    ].mean()
 
     smbh_masses_msun = np.sort(frame["m_smbh_msun"].unique())
     nsc_masses_msun = np.sort(frame["m_nsc_msun"].unique())
