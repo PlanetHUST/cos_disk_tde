@@ -133,8 +133,14 @@ def create_timescale_histograms_from_csv(
     timescales_csv: Path,
     output_dir: Path,
 ) -> None:
-    """Create cumulative disrupted-mass profiles for TDE events."""
+    """Create median cumulative-mass profiles across repeated runs."""
     frame = pd.read_csv(timescales_csv)
+    duty_cycle_myr, num_repeats = _read_output_sampling(
+        timescales_csv,
+        frame,
+    )
+    mass_grid = _read_output_mass_grid(timescales_csv, frame)
+    time_grid_myr = np.linspace(0.0, duty_cycle_myr, 201)
 
     def create_figure(
         selected: pd.DataFrame,
@@ -143,19 +149,34 @@ def create_timescale_histograms_from_csv(
     ) -> None:
         figure, axis = plt.subplots(figsize=(10, 6))
         plotted = False
-        group_columns = ["m_smbh_msun", "m_nsc_msun", "repeat"]
-        for group_key, events in selected.groupby(group_columns, sort=True):
-            events = events.sort_values("event_time_myr")
-            axis.step(
-                events["event_time_myr"],
-                events["event_mass_msun"].cumsum(),
-                where="post",
-                alpha=0.45,
-                linewidth=1.2,
-                label=(
-                    rf"$M_{{\rm BH}}={group_key[0]:.1e}$, "
-                    rf"$M_{{\rm NSC}}={group_key[1]:.1e}$, r={group_key[2]}"
+        for grid_point in mass_grid.itertuples(index=False):
+            grid_events = selected[
+                (selected["m_smbh_msun"] == grid_point.m_smbh_msun)
+                & (selected["m_nsc_msun"] == grid_point.m_nsc_msun)
+            ]
+            median_mass, lower_mass, upper_mass = (
+                _cumulative_mass_statistics(
+                    grid_events,
+                    time_grid_myr,
+                    num_repeats,
                 )
+            )
+            (line,) = axis.plot(
+                time_grid_myr,
+                median_mass,
+                linewidth=2.0,
+                label=(
+                    rf"$M_{{\rm BH}}={grid_point.m_smbh_msun:.1e}$, "
+                    rf"$M_{{\rm NSC}}={grid_point.m_nsc_msun:.1e}$"
+                ),
+            )
+            axis.fill_between(
+                time_grid_myr,
+                lower_mass,
+                upper_mass,
+                color=line.get_color(),
+                alpha=0.2,
+                linewidth=0.0,
             )
             plotted = True
 
@@ -170,6 +191,7 @@ def create_timescale_histograms_from_csv(
             )
         axis.set_xlabel(r"TDE event time $t\,[{\rm Myr}]$", fontsize=16)
         axis.set_ylabel(r"Cumulative TDE mass $[M_\odot]$", fontsize=16)
+        axis.set_xlim(0.0, duty_cycle_myr)
         axis.tick_params(axis="both", which="major", labelsize=14)
         axis.set_title(title, fontsize=18, pad=14)
         axis.grid(True, which="both", alpha=0.5, linestyle=":", linewidth=1.0)
@@ -202,6 +224,76 @@ def create_timescale_histograms_from_csv(
         frame.loc[frame["task_kind"].isin(("primary", "copy"))],
         "Cumulative TDE mass: primary and copied stars",
         COMBINED_TIMESCALE_HISTOGRAM_FILENAME,
+    )
+
+
+def _read_output_sampling(
+    timescales_csv: Path,
+    frame: pd.DataFrame,
+) -> tuple[float, int]:
+    metadata_path = timescales_csv.parent / METADATA_FILENAME
+    if metadata_path.exists():
+        with metadata_path.open() as metadata_file:
+            parameters = json.load(metadata_file).get("parameters", {})
+        duty_cycle_myr = float(parameters.get("duty_cycle_myr", 0.0))
+        num_repeats = int(parameters.get("num_repeats", 0))
+    else:
+        duty_cycle_myr = 0.0
+        num_repeats = 0
+    if duty_cycle_myr <= 0.0:
+        duty_cycle_myr = (
+            float(frame["event_time_myr"].max())
+            if not frame.empty and "event_time_myr" in frame
+            else 1.0
+        )
+    if num_repeats <= 0:
+        num_repeats = (
+            int(frame["repeat"].max()) + 1
+            if not frame.empty and "repeat" in frame
+            else 1
+        )
+    return duty_cycle_myr, num_repeats
+
+
+def _read_output_mass_grid(
+    timescales_csv: Path,
+    frame: pd.DataFrame,
+) -> pd.DataFrame:
+    averaged_results_path = timescales_csv.parent / AVERAGED_RESULTS_FILENAME
+    if averaged_results_path.exists():
+        averaged_results = pd.read_csv(
+            averaged_results_path,
+            usecols=["m_smbh_msun", "m_nsc_msun"],
+        )
+        return averaged_results.drop_duplicates()
+    required_columns = {"m_smbh_msun", "m_nsc_msun"}
+    if not required_columns.issubset(frame.columns):
+        return pd.DataFrame(columns=sorted(required_columns))
+    return frame[["m_smbh_msun", "m_nsc_msun"]].drop_duplicates()
+
+
+def _cumulative_mass_statistics(
+    events: pd.DataFrame,
+    time_grid_myr: np.ndarray,
+    num_repeats: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    cumulative_curves = np.zeros((num_repeats, time_grid_myr.size))
+    for repeat, repeat_events in events.groupby("repeat"):
+        repeat_index = int(repeat)
+        if repeat_index < 0 or repeat_index >= num_repeats:
+            continue
+        repeat_events = repeat_events.sort_values("event_time_myr")
+        event_times = repeat_events["event_time_myr"].to_numpy(dtype=float)
+        cumulative_mass = repeat_events["event_mass_msun"].cumsum().to_numpy()
+        event_indices = np.searchsorted(event_times, time_grid_myr, side="right")
+        has_event = event_indices > 0
+        cumulative_curves[repeat_index, has_event] = cumulative_mass[
+            event_indices[has_event] - 1
+        ]
+    return (
+        np.median(cumulative_curves, axis=0),
+        np.quantile(cumulative_curves, 0.16, axis=0),
+        np.quantile(cumulative_curves, 0.84, axis=0),
     )
 
 
@@ -263,12 +355,19 @@ def create_visualizations_from_csv(csv_file: Path, output_dir: Path) -> None:
         print("No data to visualize")
         return
 
+    rate_column = "tde_mass_rate_total_mean_msun_per_myr"
+    frame = (
+        frame.groupby(["m_smbh_msun", "m_nsc_msun"], as_index=False)
+        [rate_column]
+        .mean()
+    )
+
     smbh_masses_msun = np.sort(frame["m_smbh_msun"].unique())
     nsc_masses_msun = np.sort(frame["m_nsc_msun"].unique())
     rate_grid = frame.pivot(
         index="m_smbh_msun",
         columns="m_nsc_msun",
-        values="tde_mass_rate_total_mean_msun_per_myr",
+        values=rate_column,
     ).values
 
     figure, axis = plt.subplots(figsize=(10, 8))
@@ -276,12 +375,12 @@ def create_visualizations_from_csv(csv_file: Path, output_dir: Path) -> None:
         subset = frame[frame["m_nsc_msun"] == nsc_mass_msun].sort_values("m_smbh_msun")
         axis.plot(
             subset["m_smbh_msun"],
-            subset["tde_mass_rate_total_mean_msun_per_myr"],
+            subset[rate_column],
             "o-",
             label=f"M_NSC={nsc_mass_msun:.1e}",
         )
     axis.set_xscale("log")
-    if np.any(frame["tde_mass_rate_total_mean_msun_per_myr"] > 0.0):
+    if np.any(frame[rate_column] > 0.0):
         axis.set_yscale("log")
     axis.set_xlabel(r"$M_{\rm SMBH}\,[M_\odot]$")
     axis.set_ylabel(r"TDE mass rate $[M_\odot/{\rm Myr}]$")

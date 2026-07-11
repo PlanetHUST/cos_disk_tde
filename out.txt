@@ -3,7 +3,7 @@
                            TDE DYN SIMULATION                           
 ########################################################################
 Grid size: 2 x 2 = 4
-Repeats per point: 2
+Repeats per point: 3
 Dynamic resupply: True
 Direct TDE flag: False
 Output directory: tde_dyn_results
@@ -12,362 +12,534 @@ Damping CPU count: auto
 ------------------------------------------------------------------------
             Grid Point 1/4: M_SMBH=1.00e+03, M_NSC=1.00e+05             
 ------------------------------------------------------------------------
-Repeat 1/2
+Repeat 1/3
 AGN initialized done.
   cached disk for M_SMBH=1.000e+03 Msun
 Disk profiles cached. r_out = 8.918e+15 cm = 2.890e-03 pc
-Geometry selection: 519/29998 stars selected (f_geo=1.730e-02)
-Relaxation times initialized, mean_trel_myr_geo = 6.878e+00 Myr
-Running 519 damping tasks with cpus=7, chunksize=8
-Running 3593 damping tasks with cpus=7, chunksize=8
- embedded stars primary: 193
- embedded stars copies: 3146
- tde masses primary: 1.186e+03 Msun
- tde masses copies: 1.179e+04 Msun
-  total stars          : 3.000e+04
-  geo-selected stars   : 5.190e+02
-  f_geo                : 1.730e-02
-  primary TDE mass     : 1.186e+03 Msun
-  copy TDE mass        : 1.179e+04 Msun
-  total TDE mass       : 1.297e+04 Msun
-  total TDE mass rate  : 1.297e+03 Msun/Myr
-  copies generated     : 3.593e+03
-  total TDE count      : 3.296e+03
+Geometry selection: 1093/29994 stars selected (f_geo=3.644e-02)
+Relaxation times initialized, mean_trel_myr_geo = 2.299e+00 Myr
+Running 1093 damping tasks with cpus=7, chunksize=8
+Running 9884 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 508
+ embedded stars copies: 8476
+ tde masses primary: 2.391e+03 Msun
+ tde masses copies: 2.966e+04 Msun
+  total stars          : 2.999e+04
+  geo-selected stars   : 1.093e+03
+  f_geo                : 3.644e-02
+  primary TDE mass     : 2.391e+03 Msun
+  copy TDE mass        : 2.966e+04 Msun
+  total TDE mass       : 3.205e+04 Msun
+  total TDE mass rate  : 3.205e+03 Msun/Myr
+  copies generated     : 9.884e+03
+  total TDE count      : 8.872e+03
 
 ========== DEBUG INFO ==========
 
 --- Embedded ---
-Stars: 193
+Stars: 508
 BH: 0
-Outside: 326
+Outside: 585
 
 --- TDE Counts ---
 Primary Direct: 0
-Primary Migration: 187
+Primary Migration: 492
 Copy Direct: 0
-Copy Migration: 3109
+Copy Migration: 8380
 
 --- Mass --- first 5 TDEs ---
-Primary masses: [2.1940795126180266, 1.7511464689226846, 3.006694369410089, 13.893736923366138, 1.824150229079746]
-Copy masses: [1.2670797190990306, 3.532459651490161, 4.102959226975784, 2.456170559992215, 1.4649921738028027]
+Primary masses: [1.096045626519645, 1.5484037374265407, 58.824809823382466, 1.2925460202245445, 1.4178066687861943]
+Copy masses: [2.7221698257677414, 2.2023296861096657, 1.6753879705633512, 2.583573367491586, 3.104877705452]
 
 --- Times (Myr) first 5 TDEs ---
-Primary times: [3.57966217560909, 0.7684292016158362, 3.223992105491731, 4.078059341597897, 2.558965289420337]
-Copy times: [6.198555089479537, 2.276366023275781, 2.020179806629667, 3.3565908099221997, 5.573036508079826]
+Primary times: [2.366107024629119, 6.857722955903479, 0.6480371420191345, 0.10324150519335419, 1.237766271102562]
+Copy times: [0.9526816555211606, 1.2418681592944112, 1.676545955001936, 1.1967321779079043, 1.0925121404396507]
 ================================
 
-Repeat 2/2
+Repeat 2/3
 AGN initialized done.
 Disk profiles cached. r_out = 8.918e+15 cm = 2.890e-03 pc
-Geometry selection: 487/29253 stars selected (f_geo=1.665e-02)
-Relaxation times initialized, mean_trel_myr_geo = 6.698e+00 Myr
-Running 487 damping tasks with cpus=7, chunksize=8
-Running 2914 damping tasks with cpus=7, chunksize=8
- embedded stars primary: 174
- embedded stars copies: 2582
- tde masses primary: 1.026e+03 Msun
- tde masses copies: 9.170e+03 Msun
-  total stars          : 2.925e+04
-  geo-selected stars   : 4.870e+02
-  f_geo                : 1.665e-02
-  primary TDE mass     : 1.026e+03 Msun
-  copy TDE mass        : 9.170e+03 Msun
-  total TDE mass       : 1.020e+04 Msun
-  total TDE mass rate  : 1.020e+03 Msun/Myr
-  copies generated     : 2.914e+03
-  total TDE count      : 2.717e+03
+Geometry selection: 1087/30107 stars selected (f_geo=3.610e-02)
+Relaxation times initialized, mean_trel_myr_geo = 2.281e+00 Myr
+Running 1087 damping tasks with cpus=7, chunksize=8
+Running 9617 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 507
+ embedded stars copies: 8082
+ tde masses primary: 2.717e+03 Msun
+ tde masses copies: 3.190e+04 Msun
+  total stars          : 3.011e+04
+  geo-selected stars   : 1.087e+03
+  f_geo                : 3.610e-02
+  primary TDE mass     : 2.717e+03 Msun
+  copy TDE mass        : 3.190e+04 Msun
+  total TDE mass       : 3.462e+04 Msun
+  total TDE mass rate  : 3.462e+03 Msun/Myr
+  copies generated     : 9.617e+03
+  total TDE count      : 8.471e+03
 
 ========== DEBUG INFO ==========
 
 --- Embedded ---
-Stars: 174
+Stars: 507
 BH: 0
-Outside: 313
+Outside: 580
 
 --- TDE Counts ---
 Primary Direct: 0
-Primary Migration: 166
+Primary Migration: 480
 Copy Direct: 0
-Copy Migration: 2551
+Copy Migration: 7991
 
 --- Mass --- first 5 TDEs ---
-Primary masses: [27.727001126491857, 1.6508344067692844, 1.4299431341782185, 17.026101305858628, 1.194051964977916]
-Copy masses: [1.802947409424729, 10.75309935576014, 2.421938550513417, 1.0085724879654188, 1.4679724989772787]
+Primary masses: [7.163213149361654, 20.76043630325885, 5.0210455999829335, 1.0268916834570028, 6.544364342875961]
+Copy masses: [1.563491034508016, 1.011087227010551, 1.2358618163888295, 1.1770071669448938, 7.851632525217854]
 
 --- Times (Myr) first 5 TDEs ---
-Primary times: [8.068754775636531, 3.5197469956681187, 7.517755610947679, 0.11440172822119643, 4.203923595758483]
-Copy times: [3.222789202390378, 0.5799172624586167, 2.4782385035218697, 5.8798110596468, 4.116432133567063]
+Primary times: [8.683277929071203, 3.260261445379434, 3.641784525823539, 6.6631068135572775, 0.3631038039967851]
+Copy times: [4.376289228278634, 6.934912661503016, 5.8717591195367245, 6.316255701423648, 1.542063232445388]
+================================
+
+Repeat 3/3
+AGN initialized done.
+Disk profiles cached. r_out = 8.918e+15 cm = 2.890e-03 pc
+Geometry selection: 1024/30123 stars selected (f_geo=3.399e-02)
+Relaxation times initialized, mean_trel_myr_geo = 2.411e+00 Myr
+Running 1024 damping tasks with cpus=7, chunksize=8
+Running 8472 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 424
+ embedded stars copies: 7323
+ tde masses primary: 2.089e+03 Msun
+ tde masses copies: 2.585e+04 Msun
+  total stars          : 3.012e+04
+  geo-selected stars   : 1.024e+03
+  f_geo                : 3.399e-02
+  primary TDE mass     : 2.089e+03 Msun
+  copy TDE mass        : 2.585e+04 Msun
+  total TDE mass       : 2.794e+04 Msun
+  total TDE mass rate  : 2.794e+03 Msun/Myr
+  copies generated     : 8.472e+03
+  total TDE count      : 7.637e+03
+
+========== DEBUG INFO ==========
+
+--- Embedded ---
+Stars: 424
+BH: 0
+Outside: 600
+
+--- TDE Counts ---
+Primary Direct: 0
+Primary Migration: 409
+Copy Direct: 0
+Copy Migration: 7228
+
+--- Mass --- first 5 TDEs ---
+Primary masses: [2.893853942920453, 1.0460967962471017, 1.0351918985719912, 5.123949610812463, 2.0566497553401093]
+Copy masses: [1.6624056586918636, 3.244652978122905, 15.768882626318641, 5.754897796796171, 2.211540875906478]
+
+--- Times (Myr) first 5 TDEs ---
+Primary times: [2.3010273403042705, 4.51292793835428, 0.026609860642958363, 0.9419247850127014, 0.7062339925019221]
+Copy times: [4.005542814830813, 3.7743988198557306, 3.8665759303423606, 6.323521370944274, 9.899546899790877]
 ================================
 
 
 ------------------------------------------------------------------------
-            Grid Point 2/4: M_SMBH=1.00e+03, M_NSC=1.00e+07             
+            Grid Point 2/4: M_SMBH=1.00e+03, M_NSC=1.00e+05             
 ------------------------------------------------------------------------
-Repeat 1/2
+Repeat 1/3
 AGN initialized done.
 Disk profiles cached. r_out = 8.918e+15 cm = 2.890e-03 pc
-Geometry selection: 12478/3027119 stars selected (f_geo=4.122e-03)
-Relaxation times initialized, mean_trel_myr_geo = 4.047e+01 Myr
-Running 12478 damping tasks with cpus=7, chunksize=8
-Running 53465 damping tasks with cpus=7, chunksize=8
- embedded stars primary: 3782
- embedded stars copies: 45678
- tde masses primary: 2.029e+04 Msun
- tde masses copies: 1.577e+05 Msun
-  total stars          : 3.027e+06
-  geo-selected stars   : 1.248e+04
-  f_geo                : 4.122e-03
-  primary TDE mass     : 2.029e+04 Msun
-  copy TDE mass        : 1.577e+05 Msun
-  total TDE mass       : 1.780e+05 Msun
-  total TDE mass rate  : 1.780e+04 Msun/Myr
-  copies generated     : 5.346e+04
-  total TDE count      : 4.881e+04
+Geometry selection: 1137/30611 stars selected (f_geo=3.714e-02)
+Relaxation times initialized, mean_trel_myr_geo = 2.451e+00 Myr
+Running 1137 damping tasks with cpus=7, chunksize=8
+Running 9163 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 496
+ embedded stars copies: 7967
+ tde masses primary: 2.453e+03 Msun
+ tde masses copies: 2.692e+04 Msun
+  total stars          : 3.061e+04
+  geo-selected stars   : 1.137e+03
+  f_geo                : 3.714e-02
+  primary TDE mass     : 2.453e+03 Msun
+  copy TDE mass        : 2.692e+04 Msun
+  total TDE mass       : 2.938e+04 Msun
+  total TDE mass rate  : 2.938e+03 Msun/Myr
+  copies generated     : 9.163e+03
+  total TDE count      : 8.342e+03
 
 ========== DEBUG INFO ==========
 
 --- Embedded ---
-Stars: 3782
-BH: 1
-Outside: 8695
+Stars: 496
+BH: 0
+Outside: 641
 
 --- TDE Counts ---
 Primary Direct: 0
-Primary Migration: 3664
+Primary Migration: 476
 Copy Direct: 0
-Copy Migration: 45142
+Copy Migration: 7866
 
 --- Mass --- first 5 TDEs ---
-Primary masses: [1.3239246669624465, 3.143761301401007, 1.0372306189322429, 1.2911160506665391, 4.033818519085969]
-Copy masses: [1.067071556214298, 3.785499067056644, 1.501308482806205, 1.417541219672274, 1.0599647466939417]
+Primary masses: [4.745402448886275, 2.361097407710361, 1.6283347573450744, 10.328917261461369, 1.9164406788441366]
+Copy masses: [1.7131514863465396, 2.069693956173489, 1.954008393172757, 2.513759897376537, 2.294157258120323]
 
 --- Times (Myr) first 5 TDEs ---
-Primary times: [0.3574316875353973, 3.055316165089728, 0.7615240477768919, 0.8136823849922898, 1.9974510723910601]
-Copy times: [0.443468505112221, 0.14885973959934154, 0.362906271011733, 0.4053855742563426, 0.5418541385728063]
+Primary times: [3.396172714841298, 5.183403108694303, 5.673008268559408, 0.6584333412572726, 2.045873034911241]
+Copy times: [9.768422703099084, 8.50891445118879, 9.331001617120927, 7.855508136899746, 9.191360566535998]
 ================================
 
-Repeat 2/2
+Repeat 2/3
 AGN initialized done.
 Disk profiles cached. r_out = 8.918e+15 cm = 2.890e-03 pc
-Geometry selection: 12364/3025305 stars selected (f_geo=4.087e-03)
-Relaxation times initialized, mean_trel_myr_geo = 4.072e+01 Myr
-Running 12364 damping tasks with cpus=7, chunksize=8
-Running 52835 damping tasks with cpus=7, chunksize=8
- embedded stars primary: 3833
- embedded stars copies: 45040
- tde masses primary: 2.167e+04 Msun
- tde masses copies: 1.609e+05 Msun
-  total stars          : 3.025e+06
-  geo-selected stars   : 1.236e+04
-  f_geo                : 4.087e-03
-  primary TDE mass     : 2.167e+04 Msun
-  copy TDE mass        : 1.609e+05 Msun
-  total TDE mass       : 1.826e+05 Msun
-  total TDE mass rate  : 1.826e+04 Msun/Myr
-  copies generated     : 5.284e+04
-  total TDE count      : 4.819e+04
+Geometry selection: 1031/30192 stars selected (f_geo=3.415e-02)
+Relaxation times initialized, mean_trel_myr_geo = 2.228e+00 Myr
+Running 1031 damping tasks with cpus=7, chunksize=8
+Running 9298 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 470
+ embedded stars copies: 7936
+ tde masses primary: 2.109e+03 Msun
+ tde masses copies: 2.655e+04 Msun
+  total stars          : 3.019e+04
+  geo-selected stars   : 1.031e+03
+  f_geo                : 3.415e-02
+  primary TDE mass     : 2.109e+03 Msun
+  copy TDE mass        : 2.655e+04 Msun
+  total TDE mass       : 2.866e+04 Msun
+  total TDE mass rate  : 2.866e+03 Msun/Myr
+  copies generated     : 9.298e+03
+  total TDE count      : 8.314e+03
 
 ========== DEBUG INFO ==========
 
 --- Embedded ---
-Stars: 3833
+Stars: 470
 BH: 0
-Outside: 8531
+Outside: 561
 
 --- TDE Counts ---
 Primary Direct: 0
-Primary Migration: 3727
+Primary Migration: 458
 Copy Direct: 0
-Copy Migration: 44465
+Copy Migration: 7856
 
 --- Mass --- first 5 TDEs ---
-Primary masses: [1.4162523715418573, 1.2359269821057817, 2.706306489588794, 2.332448996984721, 12.966602539111818]
-Copy masses: [3.321554721765722, 9.795002425297582, 4.240800736014609, 3.2582257875295593, 6.06373044608017]
+Primary masses: [1.7328330857922103, 1.177594453842162, 1.1013823356433332, 2.888104529489243, 1.3128845688965984]
+Copy masses: [2.799786975530883, 2.262351653709446, 2.9732505496638137, 5.051052062626799, 3.4719112780921195]
 
 --- Times (Myr) first 5 TDEs ---
-Primary times: [0.5252706679331319, 0.2846289753091992, 1.5535525874294613, 0.743830753695856, 0.20007038669144506]
-Copy times: [0.22396615184054877, 0.03591429743449728, 0.13502571242637718, 0.2121154248827272, 0.21423664114540267]
+Primary times: [7.335507541018501, 6.935614208141484, 1.8928047067362004, 0.05747696488493768, 3.8502462549082836]
+Copy times: [4.540063325976747, 5.79175852851227, 4.794716795049332, 3.2092498243546648, 5.046561940463908]
+================================
+
+Repeat 3/3
+AGN initialized done.
+Disk profiles cached. r_out = 8.918e+15 cm = 2.890e-03 pc
+Geometry selection: 1023/30630 stars selected (f_geo=3.340e-02)
+Relaxation times initialized, mean_trel_myr_geo = 2.429e+00 Myr
+Running 1023 damping tasks with cpus=7, chunksize=8
+Running 8227 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 438
+ embedded stars copies: 7085
+ tde masses primary: 2.060e+03 Msun
+ tde masses copies: 2.430e+04 Msun
+  total stars          : 3.063e+04
+  geo-selected stars   : 1.023e+03
+  f_geo                : 3.340e-02
+  primary TDE mass     : 2.060e+03 Msun
+  copy TDE mass        : 2.430e+04 Msun
+  total TDE mass       : 2.636e+04 Msun
+  total TDE mass rate  : 2.636e+03 Msun/Myr
+  copies generated     : 8.227e+03
+  total TDE count      : 7.422e+03
+
+========== DEBUG INFO ==========
+
+--- Embedded ---
+Stars: 438
+BH: 0
+Outside: 585
+
+--- TDE Counts ---
+Primary Direct: 0
+Primary Migration: 423
+Copy Direct: 0
+Copy Migration: 6999
+
+--- Mass --- first 5 TDEs ---
+Primary masses: [7.824784005710447, 2.976511462422729, 2.3285238040730496, 7.033932889374056, 10.527439017054403]
+Copy masses: [10.527439017054403, 6.3713449238077375, 6.205574053794834, 10.038903474885046, 4.431578891089102]
+
+--- Times (Myr) first 5 TDEs ---
+Primary times: [2.6577003340920338, 8.76257155831599, 0.4121224089236338, 5.441548261356698, 2.5455503106805044]
+Copy times: [2.9712579427434984, 4.757761140430746, 5.342880151383591, 6.552882879053332, 9.671944989959565]
 ================================
 
 
 ------------------------------------------------------------------------
             Grid Point 3/4: M_SMBH=1.00e+05, M_NSC=1.00e+05             
 ------------------------------------------------------------------------
-Repeat 1/2
+Repeat 1/3
 AGN initialized done.
   cached disk for M_SMBH=1.000e+05 Msun
 Disk profiles cached. r_out = 1.751e+15 cm = 5.674e-04 pc
-Geometry selection: 101/30271 stars selected (f_geo=3.337e-03)
-Relaxation times initialized, mean_trel_myr_geo = 1.067e+02 Myr
-Running 101 damping tasks with cpus=7, chunksize=3
-Running 292 damping tasks with cpus=7, chunksize=8
- embedded stars primary: 29
- embedded stars copies: 279
- tde masses primary: 1.089e+02 Msun
- tde masses copies: 9.051e+02 Msun
-  total stars          : 3.027e+04
-  geo-selected stars   : 1.010e+02
-  f_geo                : 3.337e-03
-  primary TDE mass     : 1.089e+02 Msun
-  copy TDE mass        : 9.051e+02 Msun
-  total TDE mass       : 1.014e+03 Msun
-  total TDE mass rate  : 1.014e+02 Msun/Myr
-  copies generated     : 2.920e+02
-  total TDE count      : 2.970e+02
+Geometry selection: 232/30821 stars selected (f_geo=7.527e-03)
+Relaxation times initialized, mean_trel_myr_geo = 3.832e+01 Myr
+Running 232 damping tasks with cpus=7, chunksize=8
+Running 905 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 83
+ embedded stars copies: 864
+ tde masses primary: 3.137e+02 Msun
+ tde masses copies: 2.226e+03 Msun
+  total stars          : 3.082e+04
+  geo-selected stars   : 2.320e+02
+  f_geo                : 7.527e-03
+  primary TDE mass     : 3.137e+02 Msun
+  copy TDE mass        : 2.226e+03 Msun
+  total TDE mass       : 2.539e+03 Msun
+  total TDE mass rate  : 2.539e+02 Msun/Myr
+  copies generated     : 9.050e+02
+  total TDE count      : 9.190e+02
 
 ========== DEBUG INFO ==========
 
 --- Embedded ---
-Stars: 29
+Stars: 83
 BH: 0
-Outside: 72
+Outside: 148
 
 --- TDE Counts ---
 Primary Direct: 0
-Primary Migration: 25
+Primary Migration: 74
 Copy Direct: 0
-Copy Migration: 272
+Copy Migration: 845
 
 --- Mass --- first 5 TDEs ---
-Primary masses: [1.1174052890358064, 2.4868984052092244, 5.662922249838476, 1.5190645066900679, 1.7790316498842913]
-Copy masses: [3.255854736627986, 2.1108297043999125, 1.3816003945020376, 2.48306599496558, 3.1900916756405]
+Primary masses: [1.8335456368348815, 1.492616539965122, 8.08535552031822, 1.4037290464351804, 1.300018990773987]
+Copy masses: [1.8630081860993737, 4.967054777954198, 1.532111061657626, 1.4290020906260812, 1.4314012100287066]
 
 --- Times (Myr) first 5 TDEs ---
-Primary times: [0.6586061685055696, 5.447965228494983, 1.6112819129382787, 2.1544480162305275, 9.288082156121723]
-Copy times: [0.3309117379496857, 0.4422816167184155, 0.5845982144910012, 0.40923484325642384, 0.35585575270746944]
+Primary times: [9.809781536421353, 9.014104117380198, 4.889714589967964, 6.93073915867297, 0.6279517681869292]
+Copy times: [7.221976263421376, 3.142658014087832, 8.051799410697928, 0.5912648027780556, 0.5983969551449068]
 ================================
 
-Repeat 2/2
+Repeat 2/3
 AGN initialized done.
 Disk profiles cached. r_out = 1.751e+15 cm = 5.674e-04 pc
-Geometry selection: 120/30636 stars selected (f_geo=3.917e-03)
-Relaxation times initialized, mean_trel_myr_geo = 1.029e+02 Myr
-Running 120 damping tasks with cpus=7, chunksize=4
-Running 460 damping tasks with cpus=7, chunksize=8
- embedded stars primary: 48
- embedded stars copies: 429
- tde masses primary: 1.022e+02 Msun
- tde masses copies: 1.294e+03 Msun
-  total stars          : 3.064e+04
-  geo-selected stars   : 1.200e+02
-  f_geo                : 3.917e-03
-  primary TDE mass     : 1.022e+02 Msun
-  copy TDE mass        : 1.294e+03 Msun
-  total TDE mass       : 1.396e+03 Msun
-  total TDE mass rate  : 1.396e+02 Msun/Myr
-  copies generated     : 4.600e+02
-  total TDE count      : 4.640e+02
+Geometry selection: 244/30224 stars selected (f_geo=8.073e-03)
+Relaxation times initialized, mean_trel_myr_geo = 3.628e+01 Myr
+Running 244 damping tasks with cpus=7, chunksize=8
+Running 1361 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 101
+ embedded stars copies: 1287
+ tde masses primary: 3.382e+02 Msun
+ tde masses copies: 3.873e+03 Msun
+  total stars          : 3.022e+04
+  geo-selected stars   : 2.440e+02
+  f_geo                : 8.073e-03
+  primary TDE mass     : 3.382e+02 Msun
+  copy TDE mass        : 3.873e+03 Msun
+  total TDE mass       : 4.211e+03 Msun
+  total TDE mass rate  : 4.211e+02 Msun/Myr
+  copies generated     : 1.361e+03
+  total TDE count      : 1.363e+03
 
 ========== DEBUG INFO ==========
 
 --- Embedded ---
-Stars: 48
+Stars: 101
 BH: 0
-Outside: 72
+Outside: 143
 
 --- TDE Counts ---
 Primary Direct: 0
-Primary Migration: 41
+Primary Migration: 86
 Copy Direct: 0
-Copy Migration: 423
+Copy Migration: 1277
 
 --- Mass --- first 5 TDEs ---
-Primary masses: [8.293355507243009, 1.4942252238792662, 1.7543584146644617, 2.1502765587378634, 1.3982179938681991]
-Copy masses: [3.0759169602687626, 2.5331929267892703, 7.695018664985367, 1.0933796234983486, 1.0609394184417387]
+Primary masses: [1.1662017273485177, 1.0440989851222253, 1.0218853170373665, 2.502163015425141, 1.1557610036707575]
+Copy masses: [1.1763877464614942, 2.3944287150922627, 2.9129094149801795, 1.4317374018555165, 1.1745136463297932]
 
 --- Times (Myr) first 5 TDEs ---
-Primary times: [1.0399590872543791, 0.11278064147130568, 5.616167342922717, 9.036973127538182, 3.5771461634853843]
-Copy times: [2.803960748938723, 0.08199738650080582, 0.09655604884150443, 0.24539415972082274, 0.3024860129070113]
+Primary times: [5.006325241279036, 0.8481247640413515, 0.8351264342764987, 0.1394118678925124, 2.516819983842533]
+Copy times: [4.979529206899395, 3.499184765659446, 3.424693066449372, 5.296525795148568, 6.1648173062580405]
+================================
+
+Repeat 3/3
+AGN initialized done.
+Disk profiles cached. r_out = 1.751e+15 cm = 5.674e-04 pc
+Geometry selection: 231/30350 stars selected (f_geo=7.611e-03)
+Relaxation times initialized, mean_trel_myr_geo = 3.757e+01 Myr
+Running 231 damping tasks with cpus=7, chunksize=8
+Running 1140 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 92
+ embedded stars copies: 1094
+ tde masses primary: 6.977e+02 Msun
+ tde masses copies: 4.734e+03 Msun
+  total stars          : 3.035e+04
+  geo-selected stars   : 2.310e+02
+  f_geo                : 7.611e-03
+  primary TDE mass     : 6.977e+02 Msun
+  copy TDE mass        : 4.734e+03 Msun
+  total TDE mass       : 5.431e+03 Msun
+  total TDE mass rate  : 5.431e+02 Msun/Myr
+  copies generated     : 1.140e+03
+  total TDE count      : 1.166e+03
+
+========== DEBUG INFO ==========
+
+--- Embedded ---
+Stars: 92
+BH: 0
+Outside: 139
+
+--- TDE Counts ---
+Primary Direct: 0
+Primary Migration: 85
+Copy Direct: 0
+Copy Migration: 1081
+
+--- Mass --- first 5 TDEs ---
+Primary masses: [1.2079524144231406, 1.0098183458455272, 7.869920781292717, 4.144995296830565, 3.039469357422888]
+Copy masses: [1.0098183458455272, 1.6587691331547239, 1.4108697968025135, 59.9591251635948, 1.165881818609635]
+
+--- Times (Myr) first 5 TDEs ---
+Primary times: [1.6626277387233408, 1.4447882728536132, 1.6294289765729426, 1.283836869935553, 9.802301295187783]
+Copy times: [1.853615355259954, 1.732960207742706, 2.2355495691393705, 1.2411229133107764, 3.143491613621908]
 ================================
 
 
 ------------------------------------------------------------------------
-            Grid Point 4/4: M_SMBH=1.00e+05, M_NSC=1.00e+07             
+            Grid Point 4/4: M_SMBH=1.00e+05, M_NSC=1.00e+05             
 ------------------------------------------------------------------------
-Repeat 1/2
+Repeat 1/3
 AGN initialized done.
 Disk profiles cached. r_out = 1.751e+15 cm = 5.674e-04 pc
-Geometry selection: 2593/3036476 stars selected (f_geo=8.540e-04)
-Relaxation times initialized, mean_trel_myr_geo = 6.060e+02 Myr
-Running 2593 damping tasks with cpus=7, chunksize=8
-Running 7642 damping tasks with cpus=7, chunksize=8
- embedded stars primary: 1205
- embedded stars copies: 7204
- tde masses primary: 4.911e+03 Msun
- tde masses copies: 2.572e+04 Msun
-  total stars          : 3.036e+06
-  geo-selected stars   : 2.593e+03
-  f_geo                : 8.540e-04
-  primary TDE mass     : 4.911e+03 Msun
-  copy TDE mass        : 2.572e+04 Msun
-  total TDE mass       : 3.063e+04 Msun
-  total TDE mass rate  : 3.063e+03 Msun/Myr
-  copies generated     : 7.642e+03
-  total TDE count      : 8.238e+03
+Geometry selection: 252/29679 stars selected (f_geo=8.491e-03)
+Relaxation times initialized, mean_trel_myr_geo = 3.759e+01 Myr
+Running 252 damping tasks with cpus=7, chunksize=8
+Running 1268 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 95
+ embedded stars copies: 1187
+ tde masses primary: 3.609e+02 Msun
+ tde masses copies: 3.676e+03 Msun
+  total stars          : 2.968e+04
+  geo-selected stars   : 2.520e+02
+  f_geo                : 8.491e-03
+  primary TDE mass     : 3.609e+02 Msun
+  copy TDE mass        : 3.676e+03 Msun
+  total TDE mass       : 4.037e+03 Msun
+  total TDE mass rate  : 4.037e+02 Msun/Myr
+  copies generated     : 1.268e+03
+  total TDE count      : 1.265e+03
 
 ========== DEBUG INFO ==========
 
 --- Embedded ---
-Stars: 1205
+Stars: 95
 BH: 0
-Outside: 1382
+Outside: 157
 
 --- TDE Counts ---
 Primary Direct: 0
-Primary Migration: 1115
+Primary Migration: 88
 Copy Direct: 0
-Copy Migration: 7123
+Copy Migration: 1177
 
 --- Mass --- first 5 TDEs ---
-Primary masses: [1.3057287405767226, 1.0120956887191812, 1.0665720409019117, 1.216378902781216, 1.1017069325444004]
-Copy masses: [1.2047564659629426, 1.1524968797775268, 2.8450530761704624, 2.09310916986447, 1.7168330781255012]
+Primary masses: [1.3632741529879828, 1.1362906630628462, 1.9252465844030116, 1.9007645104880633, 1.967517716563931]
+Copy masses: [1.006648807610171, 1.1007569149051073, 1.2266895119656556, 1.1989617195146278, 2.4025186230887257]
 
 --- Times (Myr) first 5 TDEs ---
-Primary times: [2.656162264808923, 4.633944201048856, 0.6682511429749549, 3.1653081928065747, 4.8083366109027015]
-Copy times: [2.8787788293995766, 4.069420950234706, 0.36521855453379265, 0.8000882518262094, 1.2164150770104292]
+Primary times: [0.19545306891256375, 3.928489343544591, 4.298457217884756, 6.629999448271918, 0.13065140592303554]
+Copy times: [0.23963426802642795, 0.6629244932730765, 1.0843907833481987, 1.524944229098003, 1.8835301204493142]
 ================================
 
-Repeat 2/2
+Repeat 2/3
 AGN initialized done.
 Disk profiles cached. r_out = 1.751e+15 cm = 5.674e-04 pc
-Geometry selection: 2514/3033875 stars selected (f_geo=8.286e-04)
-Relaxation times initialized, mean_trel_myr_geo = 6.127e+02 Myr
-Running 2514 damping tasks with cpus=7, chunksize=8
-Running 6995 damping tasks with cpus=7, chunksize=8
- embedded stars primary: 1118
- embedded stars copies: 6520
- tde masses primary: 4.203e+03 Msun
- tde masses copies: 2.221e+04 Msun
-  total stars          : 3.034e+06
-  geo-selected stars   : 2.514e+03
-  f_geo                : 8.286e-04
-  primary TDE mass     : 4.203e+03 Msun
-  copy TDE mass        : 2.221e+04 Msun
-  total TDE mass       : 2.642e+04 Msun
-  total TDE mass rate  : 2.642e+03 Msun/Myr
-  copies generated     : 6.995e+03
-  total TDE count      : 7.498e+03
+Geometry selection: 230/30082 stars selected (f_geo=7.646e-03)
+Relaxation times initialized, mean_trel_myr_geo = 3.134e+01 Myr
+Running 230 damping tasks with cpus=7, chunksize=8
+Running 1364 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 97
+ embedded stars copies: 1306
+ tde masses primary: 2.891e+02 Msun
+ tde masses copies: 3.530e+03 Msun
+  total stars          : 3.008e+04
+  geo-selected stars   : 2.300e+02
+  f_geo                : 7.646e-03
+  primary TDE mass     : 2.891e+02 Msun
+  copy TDE mass        : 3.530e+03 Msun
+  total TDE mass       : 3.819e+03 Msun
+  total TDE mass rate  : 3.819e+02 Msun/Myr
+  copies generated     : 1.364e+03
+  total TDE count      : 1.384e+03
 
 ========== DEBUG INFO ==========
 
 --- Embedded ---
-Stars: 1118
+Stars: 97
 BH: 0
-Outside: 1389
+Outside: 131
 
 --- TDE Counts ---
 Primary Direct: 0
-Primary Migration: 1044
+Primary Migration: 89
 Copy Direct: 0
-Copy Migration: 6454
+Copy Migration: 1295
 
 --- Mass --- first 5 TDEs ---
-Primary masses: [2.5554063075280316, 10.16860948897918, 2.7683909973528453, 4.04629859253997, 1.8543841985889231]
-Copy masses: [2.538743461809257, 1.362506980786386, 1.7614300596827506, 1.0798779197052042, 1.1385011070523086]
+Primary masses: [18.218493741144133, 2.8333679984494076, 1.2240525307895642, 3.3308031157521887, 4.281187764196604]
+Copy masses: [15.522685442478206, 1.8112368662845024, 2.3272178518254125, 7.731969384457312, 1.8086114631375805]
 
 --- Times (Myr) first 5 TDEs ---
-Primary times: [1.4803292466500575, 0.34276646205051986, 0.046611381097637315, 0.03491478595051722, 2.5304154482828745]
-Copy times: [1.490045272794874, 2.5581214244488253, 0.06131797667397103, 0.1386581085694353, 0.19214697272747722]
+Primary times: [1.7640476569043289, 4.1163048866963985, 9.133888208951582, 9.641014915473253, 0.03169195166090556]
+Copy times: [1.9426807355711817, 7.997660770304506, 7.895194201443445, 5.644894846443718, 5.936120941080246]
+================================
+
+Repeat 3/3
+AGN initialized done.
+Disk profiles cached. r_out = 1.751e+15 cm = 5.674e-04 pc
+Geometry selection: 241/30363 stars selected (f_geo=7.937e-03)
+Relaxation times initialized, mean_trel_myr_geo = 3.178e+01 Myr
+Running 241 damping tasks with cpus=7, chunksize=8
+Running 1053 damping tasks with cpus=7, chunksize=8
+ embedded stars primary: 83
+ embedded stars copies: 970
+ tde masses primary: 3.026e+02 Msun
+ tde masses copies: 3.086e+03 Msun
+  total stars          : 3.036e+04
+  geo-selected stars   : 2.410e+02
+  f_geo                : 7.937e-03
+  primary TDE mass     : 3.026e+02 Msun
+  copy TDE mass        : 3.086e+03 Msun
+  total TDE mass       : 3.388e+03 Msun
+  total TDE mass rate  : 3.388e+02 Msun/Myr
+  copies generated     : 1.053e+03
+  total TDE count      : 1.033e+03
+
+========== DEBUG INFO ==========
+
+--- Embedded ---
+Stars: 83
+BH: 0
+Outside: 156
+
+--- TDE Counts ---
+Primary Direct: 0
+Primary Migration: 75
+Copy Direct: 0
+Copy Migration: 958
+
+--- Mass --- first 5 TDEs ---
+Primary masses: [26.92945469506591, 1.3376378118747063, 1.8124467451944257, 13.428393828864538, 3.5805921017472313]
+Copy masses: [1.281874827312279, 1.0449731761050183, 3.058422680106974, 1.1605496905508252, 2.283451206344805]
+
+--- Times (Myr) first 5 TDEs ---
+Primary times: [0.5076239508778241, 0.187913139569776, 9.23263531034081, 3.397888820150806, 0.770227049753325]
+Copy times: [4.610470390578238, 0.22494784031835002, 0.11189675457328663, 0.22850339368613873, 0.1567951825123105]
 ================================
 
 saved: tde_dyn_results/tde_dyn_averaged_results.csv
@@ -376,18 +548,13 @@ saved: tde_dyn_results/timescales.csv
 ########################################################################
                           SIMULATION COMPLETE                           
 ########################################################################
-Total simulations: 8
-Runtime: 1997.72 s (33.30 min)
+Total simulations: 12
+Runtime: 486.84 s (8.11 min)
 saved: tde_dyn_results/tde_dyn_averaged_results.csv
 saved: tde_dyn_results/timescales.csv
 
-Timescale statistics [Myr]
-  objects=159372, primary=31176, copies=128196, counted TDEs=119508
-  Damping   : n=121274  median=1.470e+00, mean=2.322e+00, p16-p84=1.435e-01-4.965e+00
-  Migration : n=121260  median=1.543e-02, mean=2.307e-01, p16-p84=2.404e-03-1.949e-01
-  Relaxation: n=159372  median=1.103e-01, mean=4.048e+01, p16-p84=1.912e-02-3.588e+00
-  Delivery  : n=121274  median=1.708e+00, mean=2.553e+00, p16-p84=2.818e-01-5.233e+00
+TDE event statistics
+  primary: events=3235, mass=1.612e+04 Msun
+  copy: events=52953, mass=1.863e+05 Msun
+  total: events=56188, mass=2.024e+05 Msun
 saved: tde_dyn_results/simulation_metadata.json
-visualizations saved to: tde_dyn_results/visualizations
-saved: tde_dyn_results/visualizations/timescale_histograms.png
-Total runtime: 2001.32 seconds = 33.36 minutes
