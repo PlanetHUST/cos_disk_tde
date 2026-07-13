@@ -43,6 +43,8 @@ TDE_EVENT_COLUMNS = (
     "cumulative_tde_mass_msun",
 )
 TDE_MASS_RATE_VS_TIME_PLOT_FILENAME = "tde_mass_rate_vs_time.png"
+TDE_MASS_RATE_PRIMARY_PLOT_FILENAME = "tde_mass_rate_vs_time_primary.png"
+TDE_MASS_RATE_COPIED_PLOT_FILENAME = "tde_mass_rate_vs_time_copied.png"
 EDDINGTON_LUMINOSITY_ERG_S_PER_MSUN = 1.26e38
 ACCRETION_EFFICIENCY = 0.1
 SPEED_OF_LIGHT_CM_S = 2.99792458e10
@@ -516,6 +518,18 @@ def create_timescale_histograms_from_csv(
         frame.loc[frame["task_kind"].isin(("primary", "copy"))],
         r"Time-dependent TDE mass rate $M_{\rm TDE}(<t)/t$",
         TDE_MASS_RATE_VS_TIME_PLOT_FILENAME,
+        show_mass_rate=True,
+    )
+    create_figure(
+        frame.loc[frame["task_kind"] == "primary"],
+        r"Primary-star TDE mass rate $M_{\rm TDE}(<t)/t$",
+        TDE_MASS_RATE_PRIMARY_PLOT_FILENAME,
+        show_mass_rate=True,
+    )
+    create_figure(
+        frame.loc[frame["task_kind"] == "copy"],
+        r"Copied-star TDE mass rate $M_{\rm TDE}(<t)/t$",
+        TDE_MASS_RATE_COPIED_PLOT_FILENAME,
         show_mass_rate=True,
     )
 

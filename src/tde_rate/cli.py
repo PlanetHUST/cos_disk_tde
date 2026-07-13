@@ -21,6 +21,20 @@ from .outputs import (
 from .workflow import run_simulation
 
 
+def _parse_mass_vector(value: str) -> list[float]:
+    """Parse a comma-separated mass vector, optionally enclosed in brackets."""
+    items = value.strip().removeprefix("[").removesuffix("]").split(",")
+    try:
+        masses = [float(item.strip()) for item in items if item.strip()]
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "mass vectors must contain comma-separated numbers"
+        ) from error
+    if not masses:
+        raise argparse.ArgumentTypeError("mass vectors must not be empty")
+    return masses
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser."""
     parser = argparse.ArgumentParser(
@@ -50,19 +64,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--duty-cycle-myr", type=float, default=10.0)
     parser.add_argument(
         "--smbh-masses",
-        nargs="+",
-        type=float,
+        type=_parse_mass_vector,
         default=[1e3, 3e3, 1e4, 3e4, 1e5],
-        metavar="MSUN",
-        help="explicit SMBH mass values in Msun",
+        metavar="M1,M2,...",
+        help="comma-separated SMBH mass values in Msun",
     )
     parser.add_argument(
         "--nsc-masses",
-        nargs="+",
-        type=float,
+        type=_parse_mass_vector,
         default=[1e4, 1e5, 2e5],
-        metavar="MSUN",
-        help="explicit NSC mass values in Msun",
+        metavar="M1,M2,...",
+        help="comma-separated NSC mass values in Msun",
     )
     parser.add_argument("--metallicity", type=float, default=0.01)
     parser.add_argument("--max-copies-per-object", type=int, default=30)

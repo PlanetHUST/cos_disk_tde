@@ -88,6 +88,13 @@ class OutputTests(unittest.TestCase):
             self.assertTrue(
                 (plot_dir / tde_rate.COPY_TIMESCALE_HISTOGRAM_FILENAME).exists()
             )
+            self.assertTrue((plot_dir / "tde_mass_rate_vs_time.png").exists())
+            self.assertTrue(
+                (plot_dir / "tde_mass_rate_vs_time_primary.png").exists()
+            )
+            self.assertTrue(
+                (plot_dir / "tde_mass_rate_vs_time_copied.png").exists()
+            )
 
     def test_timescale_histograms_allow_no_positive_values(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -120,6 +127,12 @@ class OutputTests(unittest.TestCase):
             )
             self.assertTrue(
                 (output_dir / tde_rate.COMBINED_TIMESCALE_HISTOGRAM_FILENAME).exists()
+            )
+            self.assertTrue(
+                (output_dir / "tde_mass_rate_vs_time_primary.png").exists()
+            )
+            self.assertTrue(
+                (output_dir / "tde_mass_rate_vs_time_copied.png").exists()
             )
 
 

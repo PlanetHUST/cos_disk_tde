@@ -27,8 +27,8 @@ class CliEntrypointTests(unittest.TestCase):
 
     def test_cli_accepts_explicit_mass_vectors_and_exposes_physics(self) -> None:
         arguments = tde_rate.build_parser().parse_args(
-            ["4", "/tmp/results", "3", "--smbh-masses", "1e3", "3e3",
-             "--nsc-masses", "1e4", "2e5", "--no-resupply"]
+            ["4", "/tmp/results", "3", "--smbh-masses", "1e3,3e3",
+             "--nsc-masses", "[1e4,2e5]", "--no-resupply"]
         )
         self.assertEqual(arguments.num_repeats, 4)
         self.assertEqual(arguments.smbh_masses, [1e3, 3e3])
@@ -36,6 +36,14 @@ class CliEntrypointTests(unittest.TestCase):
         self.assertEqual(arguments.damping_cpu_count, 3)
         self.assertTrue(arguments.no_resupply)
         self.assertEqual(arguments.duty_cycle_myr, 10.0)
+
+    def test_cli_mass_vectors_do_not_consume_optional_positionals(self) -> None:
+        arguments = tde_rate.build_parser().parse_args(
+            ["1", "--smbh-masses=3e3,1e4,3e4", "--nsc-masses=2e5"]
+        )
+        self.assertEqual(arguments.num_repeats, 1)
+        self.assertEqual(arguments.smbh_masses, [3e3, 1e4, 3e4])
+        self.assertEqual(arguments.nsc_masses, [2e5])
 
     def test_cli_can_regenerate_all_plots_without_simulating(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
