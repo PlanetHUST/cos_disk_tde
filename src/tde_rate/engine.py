@@ -25,6 +25,7 @@ from .models import (
     FloatArray,
     GeometricPopulation,
     StellarPopulation,
+    TDEOrbitalParams,
     TimescaleRecord,
     TDEDynSingleResult,
 )
@@ -242,6 +243,7 @@ class TDEDynEngine:
         result.tde_mass_primary_msun += damping_result["mass_msun"]
         result.tde_masses_primary_msun.append(damping_result["mass_msun"])
         result.tde_times_primary_myr.append(float(event_time_myr))
+        self._record_tde_orbital_params(result, damping_result)
 
     def _record_copy_tde(
         self,
@@ -253,6 +255,21 @@ class TDEDynEngine:
         result.copy_tde_mass_msun += damping_result["mass_msun"]
         result.tde_masses_copies_msun.append(damping_result["mass_msun"])
         result.tde_times_copies_myr.append(float(event_time_myr))
+        self._record_tde_orbital_params(result, damping_result)
+
+    @staticmethod
+    def _record_tde_orbital_params(
+        result: TDEDynSingleResult,
+        damping_result: DampingResult,
+    ) -> None:
+        orbital_params: TDEOrbitalParams = {
+            "task_kind": damping_result["task_kind"],
+            "semi_major_axis_cm": damping_result["initial_semi_major_axis_cm"],
+            "eccentricity": damping_result["eccentricity"],
+            "inclination_rad": damping_result["inclination_rad"],
+            "mass_msun": damping_result["mass_msun"],
+        }
+        result.tde_orbital_params.append(orbital_params)
 
     def _append_timescale_record(
         self,

@@ -25,12 +25,14 @@ class CliEntrypointTests(unittest.TestCase):
             self.assertIn("from src.tde_rate import", script_text)
             self.assertLess(len(script_text.splitlines()), 20)
 
-    def test_cli_preserves_positional_defaults_and_exposes_physics(self) -> None:
+    def test_cli_accepts_explicit_mass_vectors_and_exposes_physics(self) -> None:
         arguments = tde_rate.build_parser().parse_args(
-            ["2", "4", "/tmp/results", "3", "--no-resupply"]
+            ["4", "/tmp/results", "3", "--smbh-masses", "1e3", "3e3",
+             "--nsc-masses", "1e4", "2e5", "--no-resupply"]
         )
-        self.assertEqual(arguments.num_samples, 2)
         self.assertEqual(arguments.num_repeats, 4)
+        self.assertEqual(arguments.smbh_masses, [1e3, 3e3])
+        self.assertEqual(arguments.nsc_masses, [1e4, 2e5])
         self.assertEqual(arguments.damping_cpu_count, 3)
         self.assertTrue(arguments.no_resupply)
         self.assertEqual(arguments.duty_cycle_myr, 10.0)
@@ -41,18 +43,22 @@ class CliEntrypointTests(unittest.TestCase):
             pd.DataFrame(
                 [
                     {
+                        "m_smbh_msun": 1.0e4,
+                        "m_nsc_msun": 1.0e5,
+                        "repeat": 0,
                         "task_kind": "primary",
-                        "damping_time_myr": 0.25,
-                        "migration_time_myr": 0.75,
-                        "relaxation_time_myr": 2.0,
-                        "delivery_time_myr": 1.0,
+                        "event_time_myr": 1.0,
+                        "event_mass_msun": 1.0,
+                        "cumulative_tde_mass_msun": 1.0,
                     },
                     {
+                        "m_smbh_msun": 1.0e4,
+                        "m_nsc_msun": 1.0e5,
+                        "repeat": 0,
                         "task_kind": "copy",
-                        "damping_time_myr": 0.5,
-                        "migration_time_myr": 1.5,
-                        "relaxation_time_myr": 3.0,
-                        "delivery_time_myr": 2.0,
+                        "event_time_myr": 2.0,
+                        "event_mass_msun": 0.5,
+                        "cumulative_tde_mass_msun": 1.5,
                     },
                 ]
             ).to_csv(
@@ -72,6 +78,20 @@ class CliEntrypointTests(unittest.TestCase):
                 output_dir / tde_rate.AVERAGED_RESULTS_FILENAME,
                 index=False,
             )
+            pd.DataFrame(
+                [
+                    {
+                        "m_smbh_msun": 1.0e4,
+                        "m_nsc_msun": 1.0e5,
+                        "repeat": 0,
+                        "task_kind": "primary",
+                        "semi_major_axis_cm": 1.0e16,
+                        "eccentricity": 0.1,
+                        "inclination_rad": 0.01,
+                        "mass_msun": 1.0,
+                    }
+                ]
+            ).to_csv(output_dir / "orbital_params.csv", index=False)
 
             with patch("src.tde_rate.cli.run_simulation") as simulation:
                 tde_rate.run_cli(["--plot-only", str(output_dir)])
@@ -81,9 +101,6 @@ class CliEntrypointTests(unittest.TestCase):
             self.assertTrue((plot_dir / tde_rate.RATE_VS_SMBH_PLOT_FILENAME).exists())
             self.assertTrue((plot_dir / tde_rate.RATE_HEATMAP_FILENAME).exists())
             self.assertTrue(
-                (plot_dir / tde_rate.GEOMETRIC_FRACTION_HEATMAP_FILENAME).exists()
-            )
-            self.assertTrue(
                 (plot_dir / tde_rate.PRIMARY_TIMESCALE_HISTOGRAM_FILENAME).exists()
             )
             self.assertTrue(
@@ -92,6 +109,9 @@ class CliEntrypointTests(unittest.TestCase):
             self.assertTrue(
                 (plot_dir / tde_rate.COPY_TIMESCALE_HISTOGRAM_FILENAME).exists()
             )
+            for parameter in ("sma", "ecc", "inc", "mass"):
+                self.assertTrue((plot_dir / f"tde_pdf_{parameter}.png").exists())
+                self.assertTrue((plot_dir / f"tde_hist_{parameter}.png").exists())
 
 
 if __name__ == "__main__":

@@ -16,9 +16,11 @@ from .engine import TDEDynEngine
 from .models import TDEDynAveragedResult, TDEDynSingleResult
 from .outputs import (
     create_timescale_histograms_from_csv,
+    create_orbital_param_pdfs_from_csv,
     create_visualizations_from_csv,
     print_timescale_statistics,
     save_metadata,
+    save_orbital_params,
     save_results,
     save_timescales,
 )
@@ -59,10 +61,9 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
     config.output_dir.mkdir(parents=True, exist_ok=True)
 
     print_header("TDE DYN SIMULATION", 72, "#")
-    print(
-        f"Grid size: {config.num_samp} x {config.num_samp} = "
-        f"{config.num_samp**2}"
-    )
+    smbh_masses_msun, nsc_masses_msun = config.get_param_grid()
+    grid_size = len(smbh_masses_msun) * len(nsc_masses_msun)
+    print(f"Grid size: {len(smbh_masses_msun)} x {len(nsc_masses_msun)} = {grid_size}")
     print(f"Repeats per point: {config.num_repeats}")
     print(f"Dynamic resupply: {config.dyn_resupply}")
     print(f"Direct TDE flag: {config.direct_tde}")
@@ -72,7 +73,6 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
         f"{config.damping_cpu_count if config.damping_cpu_count is not None else 'auto'}"
     )
 
-    smbh_masses_msun, nsc_masses_msun = config.get_param_grid()
     engine = TDEDynEngine(config)
     averaged_results: list[TDEDynAveragedResult] = []
     simulation_count = 0
@@ -80,11 +80,9 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
 
     for smbh_index, smbh_mass_msun in enumerate(smbh_masses_msun):
         for nsc_index, nsc_mass_msun in enumerate(nsc_masses_msun):
-            grid_index = (
-                smbh_index * config.num_samp + nsc_index + 1
-            )
+            grid_index = smbh_index * len(nsc_masses_msun) + nsc_index + 1
             print_header(
-                f"Grid Point {grid_index}/{config.num_samp**2}: "
+                f"Grid Point {grid_index}/{grid_size}: "
                 f"M_SMBH={smbh_mass_msun:.2e}, "
                 f"M_NSC={nsc_mass_msun:.2e}",
                 72,
@@ -115,10 +113,11 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
             )
             if (
                 grid_index % config.checkpoint_grid_interval == 0
-                or grid_index == config.num_samp**2
+                or grid_index == grid_size
             ):
                 save_results(averaged_results, config.output_dir)
                 save_timescales(averaged_results, config.output_dir)
+                save_orbital_params(averaged_results, config.output_dir)
 
     runtime_s = time.time() - start_time_s
     print_header("SIMULATION COMPLETE", 72, "#")
@@ -129,6 +128,8 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
     )
     frame = save_results(averaged_results, config.output_dir)
     save_timescales(averaged_results, config.output_dir)
+    orbital_params_csv = config.output_dir / "orbital_params.csv"
+    save_orbital_params(averaged_results, config.output_dir)
     timescales_csv = config.output_dir / TIMESCALES_FILENAME
     print_timescale_statistics(timescales_csv)
     save_metadata(
@@ -157,6 +158,10 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
         )
         create_timescale_histograms_from_csv(
             timescales_csv,
+            visualization_dir,
+        )
+        create_orbital_param_pdfs_from_csv(
+            orbital_params_csv,
             visualization_dir,
         )
     return frame

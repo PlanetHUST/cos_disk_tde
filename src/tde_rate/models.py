@@ -104,6 +104,16 @@ TIMESCALE_COLUMNS: tuple[str, ...] = tuple(
 )
 
 
+class TDEOrbitalParams(TypedDict):
+    """Initial properties of one star that is ultimately disrupted."""
+
+    task_kind: str
+    semi_major_axis_cm: float
+    eccentricity: float
+    inclination_rad: float
+    mass_msun: float
+
+
 class TDEDynSingleResult:
     """Results for one repeat at one grid point."""
 
@@ -131,6 +141,7 @@ class TDEDynSingleResult:
         self.tde_masses_copies_msun: list[float] = []
         self.tde_times_primary_myr: list[float] = []
         self.tde_times_copies_myr: list[float] = []
+        self.tde_orbital_params: list[TDEOrbitalParams] = []
         self.disk_inner_radius_cm: float | None = None
         self.disk_outer_radius_cm: float | None = None
         self.nsc_radius_cm: float | None = None

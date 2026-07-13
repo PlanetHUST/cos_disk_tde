@@ -6,7 +6,6 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from src import tde_rate
@@ -34,32 +33,10 @@ class OutputTests(unittest.TestCase):
 
     def test_timescale_csv_statistics_and_histograms(self) -> None:
         single_result = tde_rate.TDEDynSingleResult(1.0e7, 1.0e6, 0)
-        single_result.timescale_records.append(
-            {
-                "m_smbh_msun": 1.0e7,
-                "m_nsc_msun": 1.0e6,
-                "repeat": 0,
-                "task_kind": "primary",
-                "object_index": 0,
-                "origin_primary_index": -1,
-                "copy_number": -1,
-                "object_type_flag": 0,
-                "mass_msun": 1.0,
-                "initial_semi_major_axis_cm": 2.0e16,
-                "final_semi_major_axis_cm": 1.0e16,
-                "eccentricity": 0.2,
-                "inclination_rad": 0.1,
-                "state_time_myr": 0.0,
-                "formation_time_myr": 4.0,
-                "damping_time_myr": 0.25,
-                "migration_time_myr": 0.75,
-                "relaxation_time_myr": 2.0,
-                "delivery_time_myr": 1.0,
-                "outcome": "migration_tde",
-                "counted_as_tde": True,
-                "tde_mode": "migration",
-            }
-        )
+        single_result.tde_times_primary_myr.append(1.0)
+        single_result.tde_masses_primary_msun.append(1.0)
+        single_result.tde_times_copies_myr.append(3.0)
+        single_result.tde_masses_copies_msun.append(0.5)
         averaged_result = tde_rate.TDEDynAveragedResult(1.0e7, 1.0e6, [single_result])
 
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -72,23 +49,38 @@ class OutputTests(unittest.TestCase):
                 statistics = tde_rate.print_timescale_statistics(csv_path)
             tde_rate.create_timescale_histograms_from_csv(csv_path, plot_dir)
 
-            self.assertEqual(list(frame.columns), list(tde_rate.TIMESCALE_COLUMNS))
-            self.assertEqual(len(statistics), 4)
-            self.assertIn("std_myr", statistics.columns)
-            self.assertIn("p25_myr", statistics.columns)
-            self.assertIn("positive_count", statistics.columns)
+            self.assertEqual(
+                list(frame.columns),
+                [
+                    "m_smbh_msun",
+                    "m_nsc_msun",
+                    "repeat",
+                    "task_kind",
+                    "event_time_myr",
+                    "event_mass_msun",
+                    "cumulative_tde_mass_msun",
+                ],
+            )
+            self.assertEqual(len(statistics), 3)
+            self.assertEqual(
+                list(statistics.columns),
+                ["task_kind", "event_count", "tde_mass_msun"],
+            )
             self.assertEqual(
                 statistics.loc[
-                    statistics["timescale"] == "damping_time_myr",
-                    "median_myr",
+                    statistics["task_kind"] == "primary",
+                    "event_count",
                 ].iloc[0],
-                0.25,
+                1,
             )
-            self.assertIn(
-                "Timescale statistics by task kind",
-                printed.getvalue(),
+            self.assertEqual(
+                statistics.loc[
+                    statistics["task_kind"] == "total",
+                    "tde_mass_msun",
+                ].iloc[0],
+                1.5,
             )
-            self.assertIn("Timescale outcome counts", printed.getvalue())
+            self.assertIn("TDE event statistics", printed.getvalue())
             self.assertTrue((plot_dir / tde_rate.TIMESCALE_HISTOGRAM_FILENAME).exists())
             self.assertTrue(
                 (plot_dir / tde_rate.COMBINED_TIMESCALE_HISTOGRAM_FILENAME).exists()
@@ -104,11 +96,13 @@ class OutputTests(unittest.TestCase):
             pd.DataFrame(
                 [
                     {
+                        "m_smbh_msun": 1.0e4,
+                        "m_nsc_msun": 1.0e5,
+                        "repeat": 0,
                         "task_kind": "primary",
-                        "damping_time_myr": 0.0,
-                        "migration_time_myr": np.nan,
-                        "relaxation_time_myr": -1.0,
-                        "delivery_time_myr": 0.0,
+                        "event_time_myr": 0.0,
+                        "event_mass_msun": 0.0,
+                        "cumulative_tde_mass_msun": 0.0,
                     }
                 ]
             ).to_csv(csv_path, index=False)

@@ -1,11 +1,10 @@
 """Configuration and model constants for the TDE-rate workflow."""
 
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 import numpy.typing as npt
-
-import helper_function as helpers
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -44,14 +43,10 @@ class TDEDynConfig:
     def __init__(
         self,
         # Sampling and runtime controls
-        num_samp: int = 3,
+        smbh_masses_msun: Sequence[float] = (1e3, 3e3, 1e4, 3e4, 1e5),
+        nsc_masses_msun: Sequence[float] = (1e4, 1e5, 2e5),
         num_repeats: int = 3,
         duty_cycle_myr: float = 10.0,
-        # Mass-grid bounds
-        m_smbh_min_msun: float = 1e7,
-        m_smbh_max_msun: float = 1e8,
-        m_nsc_min_msun: float = 1e6,
-        m_nsc_max_msun: float = 1e7,
         # Output location
         output_dir: str | Path = "./tde_dyn_results",
         # Stellar and NSC model parameters
@@ -72,25 +67,24 @@ class TDEDynConfig:
         create_visualizations: bool = True,
         print_debug_results: bool = True,
     ) -> None:
-        if num_samp <= 0 or num_repeats <= 0:
-            raise ValueError("sample and repeat counts must be positive")
+        if len(smbh_masses_msun) == 0 or len(nsc_masses_msun) == 0:
+            raise ValueError("SMBH and NSC mass vectors must not be empty")
+        if any(mass <= 0.0 for mass in (*smbh_masses_msun, *nsc_masses_msun)):
+            raise ValueError("SMBH and NSC masses must be positive")
+        if num_repeats <= 0:
+            raise ValueError("repeat count must be positive")
         if duty_cycle_myr <= 0.0:
             raise ValueError("AGN duty cycle must be positive")
         if checkpoint_grid_interval <= 0:
             raise ValueError("checkpoint interval must be positive")
 
         # Sampling and runtime controls
-        self.num_samp = num_samp
+        self.smbh_masses_msun = np.asarray(smbh_masses_msun, dtype=float)
+        self.nsc_masses_msun = np.asarray(nsc_masses_msun, dtype=float)
         self.num_repeats = num_repeats
         self.duty_cycle_myr = duty_cycle_myr
         self.damping_cpu_count = damping_cpu_count
         self.checkpoint_grid_interval = checkpoint_grid_interval
-
-        # Mass-grid bounds
-        self.m_smbh_min_msun = m_smbh_min_msun
-        self.m_smbh_max_msun = m_smbh_max_msun
-        self.m_nsc_min_msun = m_nsc_min_msun
-        self.m_nsc_max_msun = m_nsc_max_msun
 
         # Output location
         self.output_dir = Path(output_dir)
@@ -114,22 +108,5 @@ class TDEDynConfig:
         self.print_debug_results = print_debug_results
 
     def get_param_grid(self) -> tuple[FloatArray, FloatArray]:
-        """Return logarithmic SMBH and NSC mass grids [Msun]."""
-        return (
-            np.asarray(
-                helpers.initial_mass(
-                    self.num_samp,
-                    self.m_smbh_min_msun,
-                    self.m_smbh_max_msun,
-                ),
-                dtype=float,
-            ),
-            np.asarray(
-                helpers.initial_mass(
-                    self.num_samp,
-                    self.m_nsc_min_msun,
-                    self.m_nsc_max_msun,
-                ),
-                dtype=float,
-            ),
-        )
+        """Return the explicitly selected SMBH and NSC masses [Msun]."""
+        return self.smbh_masses_msun.copy(), self.nsc_masses_msun.copy()

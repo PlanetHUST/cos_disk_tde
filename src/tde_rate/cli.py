@@ -13,6 +13,8 @@ from .config import (
     TDEDynConfig,
 )
 from .outputs import (
+    ORBITAL_PARAMS_FILENAME,
+    create_orbital_param_pdfs_from_csv,
     create_timescale_histograms_from_csv,
     create_visualizations_from_csv,
 )
@@ -23,13 +25,6 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser."""
     parser = argparse.ArgumentParser(
         description="Run the dynamical NSC-AGN TDE-rate simulation."
-    )
-    parser.add_argument(
-        "num_samples",
-        nargs="?",
-        type=int,
-        default=5,
-        help="mass-grid samples per axis (default: 5)",
     )
     parser.add_argument(
         "num_repeats",
@@ -53,10 +48,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="worker count; scheduler/local CPU count is used when omitted",
     )
     parser.add_argument("--duty-cycle-myr", type=float, default=10.0)
-    parser.add_argument("--smbh-min-msun", type=float, default=1.0e3)
-    parser.add_argument("--smbh-max-msun", type=float, default=1.0e5)
-    parser.add_argument("--nsc-min-msun", type=float, default=1.0e5)
-    parser.add_argument("--nsc-max-msun", type=float, default=1.0e7)
+    parser.add_argument(
+        "--smbh-masses",
+        nargs="+",
+        type=float,
+        default=[1e3, 3e3, 1e4, 3e4, 1e5],
+        metavar="MSUN",
+        help="explicit SMBH mass values in Msun",
+    )
+    parser.add_argument(
+        "--nsc-masses",
+        nargs="+",
+        type=float,
+        default=[1e4, 1e5, 2e5],
+        metavar="MSUN",
+        help="explicit NSC mass values in Msun",
+    )
     parser.add_argument("--metallicity", type=float, default=0.01)
     parser.add_argument("--max-copies-per-object", type=int, default=30)
     parser.add_argument(
@@ -122,16 +129,17 @@ def run_cli(argv: Sequence[str] | None = None) -> None:
             output_dir / TIMESCALES_FILENAME,
             visualization_dir,
         )
+        create_orbital_param_pdfs_from_csv(
+            output_dir / ORBITAL_PARAMS_FILENAME,
+            visualization_dir,
+        )
         return
 
     config = TDEDynConfig(
-        num_samp=arguments.num_samples,
+        smbh_masses_msun=arguments.smbh_masses,
+        nsc_masses_msun=arguments.nsc_masses,
         num_repeats=arguments.num_repeats,
         duty_cycle_myr=arguments.duty_cycle_myr,
-        m_smbh_min_msun=arguments.smbh_min_msun,
-        m_smbh_max_msun=arguments.smbh_max_msun,
-        m_nsc_min_msun=arguments.nsc_min_msun,
-        m_nsc_max_msun=arguments.nsc_max_msun,
         output_dir=arguments.output_dir,
         metallicity=arguments.metallicity,
         dyn_resupply=not arguments.no_resupply,
