@@ -1,8 +1,7 @@
 __pycache__/
-doc/
+docs/
 tde_dyn_results/
 out.txt
 *md
-!README.md
 .codex/
 .agents/
