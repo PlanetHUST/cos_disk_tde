@@ -29,8 +29,43 @@ from .models import (
     TimescaleRecord,
     TDEDynSingleResult,
 )
+from .outputs import save_intermediate_population_plots
 from .runtime import vprint
 from .workers import get_hpc_cpu_count, run_damping_tasks_parallel
+
+
+def _vprint_population_ranges(
+    label: str,
+    mass_msun: FloatArray,
+    formation_time_myr: FloatArray,
+    semi_major_axis_cm: FloatArray,
+    eccentricity: FloatArray,
+    inclination_rad: FloatArray,
+) -> None:
+    """Print compact ranges for sampled or selected initial conditions."""
+    if len(mass_msun) == 0:
+        vprint(f"{label}: no stars")
+        return
+    vprint(
+        f"{label} mass range is "
+        f"{mass_msun.min():.3e} to {mass_msun.max():.3e} Msun"
+    )
+    vprint(
+        f"{label} formation time range is "
+        f"{formation_time_myr.min():.3e} to {formation_time_myr.max():.3e} Myr"
+    )
+    vprint(
+        f"{label} sma range is "
+        f"{semi_major_axis_cm.min():.3e} to {semi_major_axis_cm.max():.3e} cm"
+    )
+    vprint(
+        f"{label} eccentricity range is "
+        f"{eccentricity.min():.3e} to {eccentricity.max():.3e}"
+    )
+    vprint(
+        f"{label} inclination range is "
+        f"{inclination_rad.min():.3e} to {inclination_rad.max():.3e} rad"
+    )
 
 
 class TDEDynEngine:
@@ -113,6 +148,12 @@ class TDEDynEngine:
         stellar_mass_msun, stellar_lifetime_yr = stellar_sampling.sample_efficient(
             m_nsc_msun, Z=self.config.metallicity
         )
+
+        vprint(
+            "sampled stellar mass range is "
+            f"{stellar_mass_msun.min():.3e} to {stellar_mass_msun.max():.3e} Msun"
+        )
+
         nsc_radius_cm = self.estimate_nsc_radius_cm(m_nsc_msun)
         (
             semi_major_axis_cm,
@@ -123,6 +164,7 @@ class TDEDynEngine:
             len(stellar_mass_msun),
             m_smbh_msun,
             rmax=nsc_radius_cm,
+            gamma=self.config.initial_stellar_density_gamma,
         )
         return {
             "mass_msun": np.asarray(stellar_mass_msun, dtype=float),
@@ -542,12 +584,36 @@ class TDEDynEngine:
             disk_data["inner_radius_cm"],
             disk_data["outer_radius_cm"],
         )
+        _vprint_population_ranges(
+            "initial population",
+            population["mass_msun"],
+            population["formation_time_myr"],
+            population["semi_major_axis_cm"],
+            population["eccentricity"],
+            population["inclination_rad"],
+        )
+        save_intermediate_population_plots(
+            population,
+            mask,
+            self.config.output_dir,
+            m_smbh_msun=m_smbh_msun,
+            m_nsc_msun=m_nsc_msun,
+            repeat_idx=repeat_idx,
+        )
         selected_indices = np.where(mask)[0]
         result.geo_selected_stars = len(selected_indices)
         result.f_geo = (
             len(selected_indices) / result.total_stars
             if result.total_stars > 0
             else 0.0
+        )
+        _vprint_population_ranges(
+            "disk-crossing population",
+            population["mass_msun"][selected_indices],
+            population["formation_time_myr"][selected_indices],
+            population["semi_major_axis_cm"][selected_indices],
+            population["eccentricity"][selected_indices],
+            population["inclination_rad"][selected_indices],
         )
         if len(selected_indices) == 0:
             return result

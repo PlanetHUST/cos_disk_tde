@@ -21,7 +21,7 @@ from .config import (
     TIMESCALES_FILENAME,
 )
 from .config import TDEDynConfig
-from .models import TDEDynAveragedResult
+from .models import BoolArray, StellarPopulation, TDEDynAveragedResult
 
 RESULT_COLUMNS = (
     "m_smbh_msun",
@@ -63,17 +63,56 @@ ORBITAL_PARAM_COLUMNS = (
 )
 ORBITAL_PLOT_SPECS = {
     "semi_major_axis_cm": (
-        "tde_pdf_sma.png", "tde_hist_sma.png", r"Initial $a\,[{\rm cm}]$", None
+        "tde_pdf_sma.png",
+        "tde_hist_sma.png",
+        r"Initial $a\,[{\rm cm}]$",
+        None,
     ),
     "eccentricity": (
-        "tde_pdf_ecc.png", "tde_hist_ecc.png", r"Initial eccentricity $e$", (1e-4, 1.0)
+        "tde_pdf_ecc.png",
+        "tde_hist_ecc.png",
+        r"Initial eccentricity $e$",
+        (1e-4, 1.0),
     ),
     "inclination_rad": (
-        "tde_pdf_inc.png", "tde_hist_inc.png", r"Initial inclination $i\,[{\rm rad}]$", (1e-5, 1e1)
+        "tde_pdf_inc.png",
+        "tde_hist_inc.png",
+        r"Initial inclination $i\,[{\rm rad}]$",
+        (1e-5, 1e1),
     ),
     "mass_msun": (
-        "tde_pdf_mass.png", "tde_hist_mass.png",
-        r"Initial stellar mass $m_\star\,[M_\odot]$", (1e-1, 1e2)
+        "tde_pdf_mass.png",
+        "tde_hist_mass.png",
+        r"Initial stellar mass $m_\star\,[M_\odot]$",
+        (1e-1, 1e2),
+    ),
+}
+INTERMEDIATE_DIRECTORY = "intermediate"
+INTERMEDIATE_POPULATION_SPECS = {
+    "mass_msun": (
+        "mass",
+        r"Initial stellar mass $m_\star\,[M_\odot]$",
+        True,
+    ),
+    "formation_time_myr": (
+        "formation_time",
+        r"Formation time $[{\rm Myr}]$",
+        True,
+    ),
+    "semi_major_axis_cm": (
+        "sma",
+        r"Initial $a\,[{\rm cm}]$",
+        True,
+    ),
+    "eccentricity": (
+        "ecc",
+        r"Initial eccentricity $e$",
+        True,
+    ),
+    "inclination_rad": (
+        "inc",
+        r"Initial inclination $i\,[{\rm rad}]$",
+        True,
     ),
 }
 
@@ -162,6 +201,102 @@ def save_orbital_params(
     return frame
 
 
+def save_intermediate_population_plots(
+    population: StellarPopulation,
+    disk_crossing_mask: BoolArray,
+    output_dir: Path,
+    *,
+    m_smbh_msun: float,
+    m_nsc_msun: float,
+    repeat_idx: int,
+) -> None:
+    """Save sampled-population diagnostics before damping classification."""
+    intermediate_dir = output_dir / INTERMEDIATE_DIRECTORY
+    intermediate_dir.mkdir(parents=True, exist_ok=True)
+    selected_mask = np.asarray(disk_crossing_mask, dtype=bool)
+    tag = (
+        f"smbh_{m_smbh_msun:.1e}_nsc_{m_nsc_msun:.1e}_"
+        f"repeat_{repeat_idx}"
+    ).replace("+", "")
+    for column, (
+        short_name,
+        xlabel,
+        use_log_x,
+    ) in INTERMEDIATE_POPULATION_SPECS.items():
+        all_values = np.asarray(population[column], dtype=float)
+        selected_values = all_values[selected_mask]
+        path = intermediate_dir / f"intermediate_{short_name}_{tag}.png"
+        _plot_intermediate_distribution(
+            all_values,
+            selected_values,
+            xlabel,
+            path,
+            use_log_x=use_log_x,
+        )
+
+
+def _plot_intermediate_distribution(
+    all_values: np.ndarray,
+    selected_values: np.ndarray,
+    xlabel: str,
+    output_path: Path,
+    *,
+    use_log_x: bool,
+) -> None:
+    figure, axis = plt.subplots(figsize=(8, 5))
+    finite_all = all_values[np.isfinite(all_values)]
+    finite_selected = selected_values[np.isfinite(selected_values)]
+    if use_log_x:
+        finite_all = finite_all[finite_all > 0.0]
+        finite_selected = finite_selected[finite_selected > 0.0]
+    if finite_all.size:
+        if use_log_x:
+            value_min = float(finite_all.min())
+            value_max = float(finite_all.max())
+            if value_min == value_max:
+                value_min /= 1.1
+                value_max *= 1.1
+            bins = np.geomspace(value_min, value_max, 31)
+        else:
+            bins = 30
+        axis.hist(
+            finite_all,
+            bins=bins,
+            histtype="step",
+            linewidth=1.6,
+            label="all sampled",
+        )
+        if finite_selected.size:
+            axis.hist(
+                finite_selected,
+                bins=bins,
+                histtype="step",
+                linewidth=1.6,
+                label="disk crossing",
+            )
+        if use_log_x:
+            axis.set_xscale("log")
+            if finite_all.size > 1:
+                axis.set_yscale("log")
+        axis.legend(frameon=False)
+    else:
+        axis.text(
+            0.5,
+            0.5,
+            "No positive finite data",
+            ha="center",
+            va="center",
+            transform=axis.transAxes,
+        )
+    axis.set_xlabel(xlabel)
+    axis.set_ylabel("Number of stars per bin")
+    axis.set_title("Initial population before damping")
+    figure.tight_layout()
+    figure.savefig(output_path, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+    print(f"saved: {output_path}")
+
+
 def create_orbital_param_pdfs_from_csv(
     orbital_params_csv: Path,
     output_dir: Path,
@@ -177,14 +312,29 @@ def create_orbital_param_pdfs_from_csv(
     if num_repeats <= 0 and not frame.empty:
         num_repeats = int(frame["repeat"].max()) + 1
     output_dir.mkdir(parents=True, exist_ok=True)
-    for column, (pdf_filename, hist_filename, xlabel, value_range) in ORBITAL_PLOT_SPECS.items():
+    for column, (
+        pdf_filename,
+        hist_filename,
+        xlabel,
+        value_range,
+    ) in ORBITAL_PLOT_SPECS.items():
         _create_orbital_param_plot(
-            frame, column, xlabel, value_range, num_repeats,
-            output_dir / pdf_filename, normalized_per_log_bin=False,
+            frame,
+            column,
+            xlabel,
+            value_range,
+            num_repeats,
+            output_dir / pdf_filename,
+            normalized_per_log_bin=False,
         )
         _create_orbital_param_plot(
-            frame, column, xlabel, value_range, num_repeats,
-            output_dir / hist_filename, normalized_per_log_bin=True,
+            frame,
+            column,
+            xlabel,
+            value_range,
+            num_repeats,
+            output_dir / hist_filename,
+            normalized_per_log_bin=True,
         )
 
 
@@ -219,8 +369,7 @@ def _create_orbital_param_plot(
         if bin_edges is None or bin_centers is None:
             continue
         label = (
-            rf"$M_{{\rm BH}}={m_smbh_msun:.1e}, "
-            rf"M_{{\rm NSC}}={m_nsc_msun:.1e}$"
+            rf"$M_{{\rm BH}}={m_smbh_msun:.1e}, " rf"M_{{\rm NSC}}={m_nsc_msun:.1e}$"
         )
         if normalized_per_log_bin:
             histogram, _ = np.histogram(
@@ -271,8 +420,12 @@ def _create_orbital_param_plot(
         )
         plotted = True
     if column == "mass_msun":
-        _plot_kroupa_reference(axis, value_min=1e-1, value_max=1e2,
-                               normalized_per_log_bin=normalized_per_log_bin)
+        _plot_kroupa_reference(
+            axis,
+            value_min=1e-1,
+            value_max=1e2,
+            normalized_per_log_bin=normalized_per_log_bin,
+        )
     axis.set_xscale("log")
     axis.set_yscale("log")
     if value_range is not None:
@@ -288,7 +441,14 @@ def _create_orbital_param_plot(
     if plotted:
         axis.legend(frameon=False, fontsize=8)
     else:
-        axis.text(0.5, 0.5, "No positive TDE data", ha="center", va="center", transform=axis.transAxes)
+        axis.text(
+            0.5,
+            0.5,
+            "No positive TDE data",
+            ha="center",
+            va="center",
+            transform=axis.transAxes,
+        )
     figure.tight_layout()
     figure.savefig(output_path, dpi=200, bbox_inches="tight")
     plt.close(figure)
@@ -319,13 +479,7 @@ def _plot_kroupa_reference(
 
 def _trapezoidal_integral(values: np.ndarray, coordinates: np.ndarray) -> float:
     """Integrate without depending on NumPy's version-specific aliases."""
-    return float(
-        np.sum(
-            0.5
-            * (values[:-1] + values[1:])
-            * np.diff(coordinates)
-        )
-    )
+    return float(np.sum(0.5 * (values[:-1] + values[1:]) * np.diff(coordinates)))
 
 
 def print_timescale_statistics(timescales_csv: Path) -> pd.DataFrame:
@@ -410,9 +564,7 @@ def create_timescale_histograms_from_csv(
                     * SECONDS_PER_YEAR
                     / GRAMS_PER_MSUN
                 )
-                endpoint_eddington_ratio = (
-                    median_mass[-1] / eddington_rate_msun_per_yr
-                )
+                endpoint_eddington_ratio = median_mass[-1] / eddington_rate_msun_per_yr
             (line,) = axis.plot(
                 time_grid_myr,
                 median_mass,
@@ -455,8 +607,7 @@ def create_timescale_histograms_from_csv(
         axis.set_xlabel(r"TDE event time $t\,[{\rm Myr}]$", fontsize=16)
         axis.set_ylabel(
             (
-                r"TDE mass rate $M_{\rm TDE}(<t)/t$ "
-                r"$[M_\odot\,{\rm yr}^{-1}]$"
+                r"TDE mass rate $M_{\rm TDE}(<t)/t$ " r"$[M_\odot\,{\rm yr}^{-1}]$"
                 if show_mass_rate
                 else r"Cumulative TDE mass $[M_\odot]$"
             ),
@@ -481,7 +632,7 @@ def create_timescale_histograms_from_csv(
             axis.legend(
                 loc="best",
                 frameon=False,
-                fontsize=7 if show_mass_rate else 8,
+                fontsize=12 if show_mass_rate else 14,
                 ncols=2 if show_mass_rate else 1,
                 title=(
                     (
@@ -630,6 +781,7 @@ def save_metadata(
             ),
             "duty_cycle_myr": config.duty_cycle_myr,
             "metallicity": config.metallicity,
+            "initial_stellar_density_gamma": config.initial_stellar_density_gamma,
             "nsc_radius_pc_at_reference_mass": (config.nsc_radius_pc_at_reference_mass),
             "nsc_radius_reference_mass_msun": (config.nsc_radius_reference_mass_msun),
             "nsc_radius_mass_slope": config.nsc_radius_mass_slope,

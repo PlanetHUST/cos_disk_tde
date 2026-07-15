@@ -51,6 +51,7 @@ class TDEDynConfig:
         output_dir: str | Path = "./tde_dyn_results",
         # Stellar and NSC model parameters
         metallicity: float = 0.01,
+        initial_stellar_density_gamma: float = 7.0 / 4.0,
         nsc_radius_pc_at_reference_mass: float = 0.1,
         nsc_radius_mass_slope: float = 0.13,
         nsc_radius_reference_mass_msun: float = 1.0,
@@ -75,6 +76,10 @@ class TDEDynConfig:
             raise ValueError("repeat count must be positive")
         if duty_cycle_myr <= 0.0:
             raise ValueError("AGN duty cycle must be positive")
+        if not 0.0 < initial_stellar_density_gamma < 3.0:
+            raise ValueError(
+                "initial stellar density gamma must satisfy 0 < gamma < 3"
+            )
         if checkpoint_grid_interval <= 0:
             raise ValueError("checkpoint interval must be positive")
 
@@ -91,6 +96,7 @@ class TDEDynConfig:
 
         # Stellar and NSC model parameters
         self.metallicity = metallicity
+        self.initial_stellar_density_gamma = initial_stellar_density_gamma
         self.nsc_radius_pc_at_reference_mass = nsc_radius_pc_at_reference_mass
         self.nsc_radius_mass_slope = nsc_radius_mass_slope
         self.nsc_radius_reference_mass_msun = nsc_radius_reference_mass_msun
