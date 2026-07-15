@@ -24,12 +24,12 @@ from .models import (
     DiskProfiles,
     FloatArray,
     GeometricPopulation,
+    IntermediatePopulation,
     StellarPopulation,
     TDEOrbitalParams,
     TimescaleRecord,
     TDEDynSingleResult,
 )
-from .outputs import save_intermediate_population_plots
 from .runtime import vprint
 from .workers import get_hpc_cpu_count, run_damping_tasks_parallel
 
@@ -66,6 +66,22 @@ def _vprint_population_ranges(
         f"{label} inclination range is "
         f"{inclination_rad.min():.3e} to {inclination_rad.max():.3e} rad"
     )
+
+
+def _intermediate_population_from_arrays(
+    mass_msun: FloatArray,
+    formation_time_myr: FloatArray,
+    semi_major_axis_cm: FloatArray,
+    eccentricity: FloatArray,
+    inclination_rad: FloatArray,
+) -> IntermediatePopulation:
+    return {
+        "mass_msun": np.asarray(mass_msun, dtype=float),
+        "formation_time_myr": np.asarray(formation_time_myr, dtype=float),
+        "semi_major_axis_cm": np.asarray(semi_major_axis_cm, dtype=float),
+        "eccentricity": np.asarray(eccentricity, dtype=float),
+        "inclination_rad": np.asarray(inclination_rad, dtype=float),
+    }
 
 
 class TDEDynEngine:
@@ -592,13 +608,12 @@ class TDEDynEngine:
             population["eccentricity"],
             population["inclination_rad"],
         )
-        save_intermediate_population_plots(
-            population,
-            mask,
-            self.config.output_dir,
-            m_smbh_msun=m_smbh_msun,
-            m_nsc_msun=m_nsc_msun,
-            repeat_idx=repeat_idx,
+        result.intermediate_initial_population = _intermediate_population_from_arrays(
+            population["mass_msun"],
+            population["formation_time_myr"],
+            population["semi_major_axis_cm"],
+            population["eccentricity"],
+            population["inclination_rad"],
         )
         selected_indices = np.where(mask)[0]
         result.geo_selected_stars = len(selected_indices)
@@ -614,6 +629,15 @@ class TDEDynEngine:
             population["semi_major_axis_cm"][selected_indices],
             population["eccentricity"][selected_indices],
             population["inclination_rad"][selected_indices],
+        )
+        result.intermediate_disk_crossing_population = (
+            _intermediate_population_from_arrays(
+                population["mass_msun"][selected_indices],
+                population["formation_time_myr"][selected_indices],
+                population["semi_major_axis_cm"][selected_indices],
+                population["eccentricity"][selected_indices],
+                population["inclination_rad"][selected_indices],
+            )
         )
         if len(selected_indices) == 0:
             return result

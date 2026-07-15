@@ -19,6 +19,7 @@ from .outputs import (
     create_orbital_param_pdfs_from_csv,
     create_visualizations_from_csv,
     print_timescale_statistics,
+    save_intermediate_population_plots,
     save_metadata,
     save_orbital_params,
     save_results,
@@ -111,6 +112,15 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
                     repeat_results,
                 )
             )
+            save_intermediate_population_plots(
+                repeat_results,
+                config.output_dir,
+                m_smbh_msun=float(smbh_mass_msun),
+                m_nsc_msun=float(nsc_mass_msun),
+            )
+            for result in repeat_results:
+                result.intermediate_initial_population = None
+                result.intermediate_disk_crossing_population = None
             if (
                 grid_index % config.checkpoint_grid_interval == 0
                 or grid_index == grid_size

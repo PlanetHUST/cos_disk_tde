@@ -10,7 +10,7 @@ FloatArray = npt.NDArray[np.float64]
 
 SOLAR_METALLICITY = 0.0145
 POPULATION_III_THRESHOLD_SOLAR = 1.0e-5
-POPULATION_II_MIN_RETAINED_MASS_MSUN = 1.0
+POPULATION_II_MIN_RETAINED_MASS_MSUN = 0.1
 SAMPLING_SAFETY_FACTOR = 1.2
 POPULATION_II_APPROX_MEAN_MASS_MSUN = 0.35
 POPULATION_III_APPROX_MEAN_MASS_MSUN = 50.0
@@ -35,8 +35,7 @@ def sample_salpeter(
     exponent = 1.0 - alpha
     uniform_samples = np.random.rand(n)
     return (
-        uniform_samples * (m_max**exponent - m_min**exponent)
-        + m_min**exponent
+        uniform_samples * (m_max**exponent - m_min**exponent) + m_min**exponent
     ) ** (1.0 / exponent)
 
 
@@ -50,17 +49,11 @@ def sample_topheavy(
     return sample_salpeter(n, m_min=m_min, m_max=m_max, alpha=alpha)
 
 
-def estimate_stars_needed(
-    total_mass_msun: float, average_mass_msun: float
-) -> int:
+def estimate_stars_needed(total_mass_msun: float, average_mass_msun: float) -> int:
     """Estimate a batch size for reaching ``total_mass_msun``."""
     if total_mass_msun <= 0.0 or average_mass_msun <= 0.0:
         raise ValueError("total and average stellar masses must be positive")
-    return int(
-        total_mass_msun
-        / average_mass_msun
-        * SAMPLING_SAFETY_FACTOR
-    )
+    return int(total_mass_msun / average_mass_msun * SAMPLING_SAFETY_FACTOR)
 
 
 def sample_popii_efficient(
@@ -76,18 +69,15 @@ def sample_popii_efficient(
     """
     batch_size = max(
         MIN_POPULATION_II_BATCH_SIZE,
-        estimate_stars_needed(
-            total_mass_msun, POPULATION_II_APPROX_MEAN_MASS_MSUN
-        ),
+        estimate_stars_needed(total_mass_msun, POPULATION_II_APPROX_MEAN_MASS_MSUN),
     )
     mass_batches: list[float] = []
     sampled_mass_msun = 0.0
 
     while sampled_mass_msun < total_mass_msun:
         batch_msun = sample_salpeter(batch_size, m_min, m_max, alpha)
-        batch_msun = batch_msun[
-            batch_msun > POPULATION_II_MIN_RETAINED_MASS_MSUN
-        ]
+        # for efficiency
+        batch_msun = batch_msun[batch_msun > POPULATION_II_MIN_RETAINED_MASS_MSUN]
         if batch_msun.size == 0:
             continue
         mass_batches.extend(batch_msun.tolist())
@@ -108,9 +98,7 @@ def sample_popiii_efficient(
     """Sample Pop III stars [Msun] until their mass reaches the target."""
     batch_size = max(
         MIN_POPULATION_III_BATCH_SIZE,
-        estimate_stars_needed(
-            total_mass_msun, POPULATION_III_APPROX_MEAN_MASS_MSUN
-        ),
+        estimate_stars_needed(total_mass_msun, POPULATION_III_APPROX_MEAN_MASS_MSUN),
     )
     mass_batches: list[float] = []
     sampled_mass_msun = 0.0
@@ -129,23 +117,13 @@ def sample_popiii_efficient(
 def population_iii_lifetime_yr(mass_msun: FloatArray) -> FloatArray:
     """Return Pop III stellar lifetimes [yr] for masses in solar masses."""
     log_mass = np.log10(mass_msun)
-    return 10 ** (
-        9.785
-        - 3.759 * log_mass
-        + 1.413 * log_mass**2
-        - 0.186 * log_mass**3
-    )
+    return 10 ** (9.785 - 3.759 * log_mass + 1.413 * log_mass**2 - 0.186 * log_mass**3)
 
 
 def population_ii_lifetime_yr(mass_msun: FloatArray) -> FloatArray:
     """Return Pop II stellar lifetimes [yr] for masses in solar masses."""
     log_mass = np.log10(mass_msun)
-    return 10 ** (
-        10.0
-        - 3.68 * log_mass
-        + 1.413 * log_mass**2
-        - 0.186 * log_mass**3
-    )
+    return 10 ** (10.0 - 3.68 * log_mass + 1.413 * log_mass**2 - 0.186 * log_mass**3)
 
 
 def TIII(m: FloatArray) -> FloatArray:
@@ -158,10 +136,11 @@ def TII(m: FloatArray) -> FloatArray:
     return population_ii_lifetime_yr(np.asarray(m, dtype=float))
 
 
-def sample_efficient(
-    mtot: float, Z: float
-) -> tuple[FloatArray, FloatArray]:
+def sample_efficient(mtot: float, Z: float) -> tuple[FloatArray, FloatArray]:
     """Return stellar masses [Msun] and lifetimes [yr]."""
+
+    Z = Z * SOLAR_METALLICITY
+
     if mtot <= 0.0:
         raise ValueError("total stellar population mass must be positive")
     if Z < 0.0:

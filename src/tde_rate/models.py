@@ -114,6 +114,16 @@ class TDEOrbitalParams(TypedDict):
     mass_msun: float
 
 
+class IntermediatePopulation(TypedDict):
+    """Initial population properties used for intermediate diagnostics."""
+
+    mass_msun: FloatArray
+    formation_time_myr: FloatArray
+    semi_major_axis_cm: FloatArray
+    eccentricity: FloatArray
+    inclination_rad: FloatArray
+
+
 class TDEDynSingleResult:
     """Results for one repeat at one grid point."""
 
@@ -142,6 +152,8 @@ class TDEDynSingleResult:
         self.tde_times_primary_myr: list[float] = []
         self.tde_times_copies_myr: list[float] = []
         self.tde_orbital_params: list[TDEOrbitalParams] = []
+        self.intermediate_initial_population: IntermediatePopulation | None = None
+        self.intermediate_disk_crossing_population: IntermediatePopulation | None = None
         self.disk_inner_radius_cm: float | None = None
         self.disk_outer_radius_cm: float | None = None
         self.nsc_radius_cm: float | None = None

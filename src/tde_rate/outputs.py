@@ -21,7 +21,7 @@ from .config import (
     TIMESCALES_FILENAME,
 )
 from .config import TDEDynConfig
-from .models import BoolArray, StellarPopulation, TDEDynAveragedResult
+from .models import TDEDynAveragedResult, TDEDynSingleResult
 
 RESULT_COLUMNS = (
     "m_smbh_msun",
@@ -115,6 +115,22 @@ INTERMEDIATE_POPULATION_SPECS = {
         True,
     ),
 }
+INTERMEDIATE_HEATMAP_SPECS = (
+    (
+        "mass_formation_time",
+        "mass_msun",
+        "formation_time_myr",
+        r"Initial stellar mass $m_\star\,[M_\odot]$",
+        r"Formation time $[{\rm Myr}]$",
+    ),
+    (
+        "sma_ecc",
+        "semi_major_axis_cm",
+        "eccentricity",
+        r"Initial $a\,[{\rm cm}]$",
+        r"Initial eccentricity $e$",
+    ),
+)
 
 
 def save_results(
@@ -202,82 +218,120 @@ def save_orbital_params(
 
 
 def save_intermediate_population_plots(
-    population: StellarPopulation,
-    disk_crossing_mask: BoolArray,
+    repeat_results: Sequence[TDEDynSingleResult],
     output_dir: Path,
     *,
     m_smbh_msun: float,
     m_nsc_msun: float,
-    repeat_idx: int,
 ) -> None:
-    """Save sampled-population diagnostics before damping classification."""
+    """Save repeat-averaged sampled-population diagnostics for one grid point."""
     intermediate_dir = output_dir / INTERMEDIATE_DIRECTORY
     intermediate_dir.mkdir(parents=True, exist_ok=True)
-    selected_mask = np.asarray(disk_crossing_mask, dtype=bool)
-    tag = (
-        f"smbh_{m_smbh_msun:.1e}_nsc_{m_nsc_msun:.1e}_"
-        f"repeat_{repeat_idx}"
-    ).replace("+", "")
+    tag = f"smbh_{m_smbh_msun:.1e}_nsc_{m_nsc_msun:.1e}".replace("+", "")
     for column, (
         short_name,
         xlabel,
         use_log_x,
     ) in INTERMEDIATE_POPULATION_SPECS.items():
-        all_values = np.asarray(population[column], dtype=float)
-        selected_values = all_values[selected_mask]
-        path = intermediate_dir / f"intermediate_{short_name}_{tag}.png"
+        path = intermediate_dir / f"{short_name}_{tag}.png"
         _plot_intermediate_distribution(
-            all_values,
-            selected_values,
+            _collect_intermediate_values(repeat_results, "initial", column),
+            _collect_intermediate_values(repeat_results, "disk_crossing", column),
             xlabel,
             path,
             use_log_x=use_log_x,
         )
+    for short_name, x_column, y_column, xlabel, ylabel in INTERMEDIATE_HEATMAP_SPECS:
+        initial_x = _collect_intermediate_values(repeat_results, "initial", x_column)
+        initial_y = _collect_intermediate_values(repeat_results, "initial", y_column)
+        disk_crossing_x = _collect_intermediate_values(
+            repeat_results,
+            "disk_crossing",
+            x_column,
+        )
+        disk_crossing_y = _collect_intermediate_values(
+            repeat_results,
+            "disk_crossing",
+            y_column,
+        )
+        x_bins = _shared_intermediate_bins(initial_x, disk_crossing_x)
+        y_bins = _shared_intermediate_bins(initial_y, disk_crossing_y)
+        _plot_intermediate_heatmap(
+            initial_x,
+            initial_y,
+            xlabel,
+            ylabel,
+            intermediate_dir / f"{short_name}_initial_{tag}.png",
+            x_bins=x_bins,
+            y_bins=y_bins,
+        )
+        _plot_intermediate_heatmap(
+            disk_crossing_x,
+            disk_crossing_y,
+            xlabel,
+            ylabel,
+            intermediate_dir / f"{short_name}_disk_crossing_{tag}.png",
+            x_bins=x_bins,
+            y_bins=y_bins,
+        )
+
+
+def _collect_intermediate_values(
+    repeat_results: Sequence[TDEDynSingleResult],
+    subset: str,
+    column: str,
+) -> list[np.ndarray]:
+    values_by_repeat: list[np.ndarray] = []
+    for result in repeat_results:
+        population = (
+            result.intermediate_initial_population
+            if subset == "initial"
+            else result.intermediate_disk_crossing_population
+        )
+        if population is None:
+            values_by_repeat.append(np.asarray([], dtype=float))
+            continue
+        values_by_repeat.append(np.asarray(population[column], dtype=float))
+    return values_by_repeat
 
 
 def _plot_intermediate_distribution(
-    all_values: np.ndarray,
-    selected_values: np.ndarray,
+    initial_values_by_repeat: Sequence[np.ndarray],
+    disk_crossing_values_by_repeat: Sequence[np.ndarray],
     xlabel: str,
     output_path: Path,
     *,
     use_log_x: bool,
 ) -> None:
     figure, axis = plt.subplots(figsize=(8, 5))
-    finite_all = all_values[np.isfinite(all_values)]
-    finite_selected = selected_values[np.isfinite(selected_values)]
-    if use_log_x:
-        finite_all = finite_all[finite_all > 0.0]
-        finite_selected = finite_selected[finite_selected > 0.0]
-    if finite_all.size:
-        if use_log_x:
-            value_min = float(finite_all.min())
-            value_max = float(finite_all.max())
-            if value_min == value_max:
-                value_min /= 1.1
-                value_max *= 1.1
-            bins = np.geomspace(value_min, value_max, 31)
-        else:
-            bins = 30
-        axis.hist(
-            finite_all,
-            bins=bins,
-            histtype="step",
-            linewidth=1.6,
-            label="all sampled",
+    initial_values = _finite_intermediate_values(initial_values_by_repeat, use_log_x)
+    disk_crossing_values = _finite_intermediate_values(
+        disk_crossing_values_by_repeat,
+        use_log_x,
+    )
+    combined_values = (
+        np.concatenate([initial_values, disk_crossing_values])
+        if initial_values.size or disk_crossing_values.size
+        else np.asarray([], dtype=float)
+    )
+    if combined_values.size:
+        bins = _intermediate_bins(combined_values, use_log_x, bins=30)
+        _plot_mean_step_histogram(
+            axis,
+            initial_values_by_repeat,
+            bins,
+            "all sampled",
+            use_log_x=use_log_x,
         )
-        if finite_selected.size:
-            axis.hist(
-                finite_selected,
-                bins=bins,
-                histtype="step",
-                linewidth=1.6,
-                label="disk crossing",
-            )
+        _plot_mean_step_histogram(
+            axis,
+            disk_crossing_values_by_repeat,
+            bins,
+            "disk crossing",
+            use_log_x=use_log_x,
+        )
         if use_log_x:
             axis.set_xscale("log")
-            if finite_all.size > 1:
-                axis.set_yscale("log")
         axis.legend(frameon=False)
     else:
         axis.text(
@@ -289,12 +343,160 @@ def _plot_intermediate_distribution(
             transform=axis.transAxes,
         )
     axis.set_xlabel(xlabel)
-    axis.set_ylabel("Number of stars per bin")
-    axis.set_title("Initial population before damping")
+    axis.set_ylabel("Mean number of stars per bin")
+    axis.set_title("Initial population diagnostics")
     figure.tight_layout()
     figure.savefig(output_path, dpi=200, bbox_inches="tight")
     plt.close(figure)
     print(f"saved: {output_path}")
+
+
+def _plot_intermediate_heatmap(
+    x_values_by_repeat: Sequence[np.ndarray],
+    y_values_by_repeat: Sequence[np.ndarray],
+    xlabel: str,
+    ylabel: str,
+    output_path: Path,
+    *,
+    x_bins: np.ndarray,
+    y_bins: np.ndarray,
+) -> None:
+    figure, axis = plt.subplots(figsize=(7, 6))
+    finite_pairs = [
+        _finite_intermediate_pair(x_values, y_values)
+        for x_values, y_values in zip(
+            x_values_by_repeat,
+            y_values_by_repeat,
+            strict=True,
+        )
+    ]
+    if x_bins.size and y_bins.size:
+        histograms = []
+        for x_values, y_values in finite_pairs:
+            if x_values.size == 0:
+                histograms.append(np.zeros((len(x_bins) - 1, len(y_bins) - 1)))
+                continue
+            histogram, _, _ = np.histogram2d(
+                x_values,
+                y_values,
+                bins=(x_bins, y_bins),
+            )
+            histograms.append(histogram)
+        mean_histogram = np.mean(histograms, axis=0)
+        mesh = axis.pcolormesh(
+            x_bins,
+            y_bins,
+            mean_histogram.T,
+            shading="auto",
+        )
+        figure.colorbar(mesh, ax=axis, label="Mean number of stars per bin")
+        axis.set_xscale("log")
+        axis.set_yscale("log")
+    else:
+        axis.text(
+            0.5,
+            0.5,
+            "No positive finite data",
+            ha="center",
+            va="center",
+            transform=axis.transAxes,
+        )
+    axis.set_xlabel(xlabel)
+    axis.set_ylabel(ylabel)
+    axis.set_title("Initial population diagnostics")
+    figure.tight_layout()
+    figure.savefig(output_path, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+    print(f"saved: {output_path}")
+
+
+def _finite_intermediate_values(
+    values_by_repeat: Sequence[np.ndarray],
+    positive_only: bool,
+) -> np.ndarray:
+    finite_values = []
+    for values in values_by_repeat:
+        selected = values[np.isfinite(values)]
+        if positive_only:
+            selected = selected[selected > 0.0]
+        finite_values.append(selected)
+    if not finite_values:
+        return np.asarray([], dtype=float)
+    return np.concatenate(finite_values)
+
+
+def _finite_intermediate_pair(
+    x_values: np.ndarray,
+    y_values: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    mask = (
+        np.isfinite(x_values)
+        & np.isfinite(y_values)
+        & (x_values > 0.0)
+        & (y_values > 0.0)
+    )
+    return x_values[mask], y_values[mask]
+
+
+def _intermediate_bins(
+    values: np.ndarray,
+    use_log_x: bool,
+    *,
+    bins: int,
+) -> np.ndarray:
+    value_min = float(values.min())
+    value_max = float(values.max())
+    if value_min == value_max:
+        value_min /= 1.1
+        value_max *= 1.1
+    if use_log_x:
+        return np.geomspace(value_min, value_max, bins + 1)
+    return np.linspace(value_min, value_max, bins + 1)
+
+
+def _shared_intermediate_bins(
+    first_values_by_repeat: Sequence[np.ndarray],
+    second_values_by_repeat: Sequence[np.ndarray],
+) -> np.ndarray:
+    first_values = _finite_intermediate_values(first_values_by_repeat, True)
+    second_values = _finite_intermediate_values(second_values_by_repeat, True)
+    combined_values = (
+        np.concatenate([first_values, second_values])
+        if first_values.size or second_values.size
+        else np.asarray([], dtype=float)
+    )
+    if not combined_values.size:
+        return np.asarray([], dtype=float)
+    return _intermediate_bins(combined_values, True, bins=30)
+
+
+def _plot_mean_step_histogram(
+    axis: Any,
+    values_by_repeat: Sequence[np.ndarray],
+    bins: np.ndarray,
+    label: str,
+    *,
+    use_log_x: bool,
+) -> None:
+    histograms = []
+    for values in values_by_repeat:
+        selected = values[np.isfinite(values)]
+        if use_log_x:
+            selected = selected[selected > 0.0]
+        histogram, _ = np.histogram(selected, bins=bins)
+        histograms.append(histogram)
+    if not histograms:
+        return
+    mean_histogram = np.mean(histograms, axis=0)
+    step_x = np.repeat(bins, 2)[1:-1]
+    step_y = np.repeat(mean_histogram, 2)
+    axis.plot(
+        step_x,
+        step_y,
+        drawstyle="steps-post",
+        linewidth=1.6,
+        label=label,
+    )
 
 
 def create_orbital_param_pdfs_from_csv(
