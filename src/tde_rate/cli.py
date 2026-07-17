@@ -77,6 +77,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="comma-separated NSC mass values in Msun",
     )
     parser.add_argument("--metallicity", type=float, default=0.01)
+    parser.add_argument(
+        "--initial-stellar-density-gamma",
+        type=float,
+        default=7.0 / 4.0,
+        help="initial stellar radial number-density power-law index",
+    )
     parser.add_argument("--max-copies-per-object", type=int, default=30)
     parser.add_argument(
         "--no-resupply",
@@ -154,6 +160,7 @@ def run_cli(argv: Sequence[str] | None = None) -> None:
         duty_cycle_myr=arguments.duty_cycle_myr,
         output_dir=arguments.output_dir,
         metallicity=arguments.metallicity,
+        initial_stellar_density_gamma=arguments.initial_stellar_density_gamma,
         dyn_resupply=not arguments.no_resupply,
         max_copies_per_object=arguments.max_copies_per_object,
         reuse_same_orbit_for_copies=(not arguments.resample_copy_orbits),

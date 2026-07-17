@@ -386,6 +386,9 @@ class TDEDynEngine:
         embedded_stars_copies = 0
         embedded_bh = 0
         outside = 0
+        type_ii_migration_count = 0
+        type_ii_migration_mass_msun = 0.0
+        min_type_ii_threshold_msun = np.inf
 
         for damping_result in primary_results:
             relaxation_time_myr = float(relaxation_time_myr_geo[damping_result["idx"]])
@@ -416,6 +419,26 @@ class TDEDynEngine:
                     )
                 else:
                     embedded_stars_primary += 1
+                    type_ii_threshold_msun = helpers.type_ii_threshold_mass_msun(
+                        agn_properties,
+                        damping_result["initial_semi_major_axis_cm"],
+                        h_list=aspect_ratio,
+                        r_list=radius_cm,
+                    )
+                    min_type_ii_threshold_msun = min(
+                        min_type_ii_threshold_msun,
+                        type_ii_threshold_msun,
+                    )
+                    gap_parameter = helpers.type_ii_gap_parameter(
+                        agn_properties,
+                        damping_result["mass_g"],
+                        damping_result["initial_semi_major_axis_cm"],
+                        h_list=aspect_ratio,
+                        r_list=radius_cm,
+                    )
+                    if gap_parameter > helpers.TYPE_II_GAP_PARAMETER_THRESHOLD:
+                        type_ii_migration_count += 1
+                        type_ii_migration_mass_msun += damping_result["mass_msun"]
                     migration_time_myr = helpers.t_migration(
                         agn_properties,
                         damping_result["mass_g"],
@@ -524,6 +547,26 @@ class TDEDynEngine:
                 )
             else:
                 embedded_stars_copies += 1
+                type_ii_threshold_msun = helpers.type_ii_threshold_mass_msun(
+                    agn_properties,
+                    damping_result["initial_semi_major_axis_cm"],
+                    h_list=aspect_ratio,
+                    r_list=radius_cm,
+                )
+                min_type_ii_threshold_msun = min(
+                    min_type_ii_threshold_msun,
+                    type_ii_threshold_msun,
+                )
+                gap_parameter = helpers.type_ii_gap_parameter(
+                    agn_properties,
+                    damping_result["mass_g"],
+                    damping_result["initial_semi_major_axis_cm"],
+                    h_list=aspect_ratio,
+                    r_list=radius_cm,
+                )
+                if gap_parameter > helpers.TYPE_II_GAP_PARAMETER_THRESHOLD:
+                    type_ii_migration_count += 1
+                    type_ii_migration_mass_msun += damping_result["mass_msun"]
                 migration_time_myr = helpers.t_migration(
                     agn_properties,
                     damping_result["mass_g"],
@@ -566,6 +609,18 @@ class TDEDynEngine:
         vprint(f" embedded stars copies: {embedded_stars_copies}")
         vprint(f" tde masses primary: " f"{result.tde_mass_primary_msun:.3e} Msun")
         vprint(f" tde masses copies: " f"{result.copy_tde_mass_msun:.3e} Msun")
+        if np.isfinite(min_type_ii_threshold_msun):
+            vprint(
+                " type-II migration minimum threshold mass: "
+                f"{min_type_ii_threshold_msun:.3e} Msun"
+            )
+        else:
+            vprint(" type-II migration minimum threshold mass: no embedded stars")
+        vprint(
+            " type-II migration influenced mass: "
+            f"{type_ii_migration_mass_msun:.3e} Msun "
+            f"({type_ii_migration_count} stars)"
+        )
 
     def run_single_simulation(
         self, m_smbh_msun: float, m_nsc_msun: float, repeat_idx: int

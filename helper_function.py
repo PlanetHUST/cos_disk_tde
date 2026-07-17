@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 
 import constants as const
+from disk import DISK_VISCOSITY_ALPHA
 from general_class import AGN_properties
 
 FloatArray = npt.NDArray[np.float64]
@@ -23,6 +24,7 @@ VELOCITY_DISPERSION_MASS_EXPONENT = 1.0 / 4.38
 RELAXATION_COEFFICIENT = 0.34
 COULOMB_LOGARITHM = 10.0
 RELAXATION_REFERENCE_STELLAR_MASS_G = const.msun
+TYPE_II_GAP_PARAMETER_THRESHOLD = 11.0
 
 
 def get_cpu_count() -> int:
@@ -134,6 +136,45 @@ def sigma_gas(
     return float(sigma_list[find_closest_index(r_list, r)])
 
 
+def type_ii_gap_parameter(
+    AGN: AGN_properties,
+    m_g: float,
+    R: float,
+    h_list: FloatArray,
+    r_list: FloatArray,
+) -> float:
+    """Return the gap-opening parameter for type-II migration."""
+    if m_g <= 0.0 or R <= 0.0:
+        raise ValueError("object mass and orbital radius must be positive")
+    smbh_mass_g = AGN.M_SMBH * const.msun
+    aspect_ratio = h_gas(R, h_list, r_list)
+    return float(
+        m_g**2
+        / (
+            DISK_VISCOSITY_ALPHA
+            * aspect_ratio**2
+            * smbh_mass_g**2
+        )
+    )
+
+
+def type_ii_threshold_mass_msun(
+    AGN: AGN_properties,
+    R: float,
+    h_list: FloatArray,
+    r_list: FloatArray,
+) -> float:
+    """Return the local stellar mass threshold [Msun] for K > 11."""
+    if R <= 0.0:
+        raise ValueError("orbital radius must be positive")
+    aspect_ratio = h_gas(R, h_list, r_list)
+    return float(
+        np.sqrt(TYPE_II_GAP_PARAMETER_THRESHOLD * DISK_VISCOSITY_ALPHA)
+        * aspect_ratio
+        * AGN.M_SMBH
+    )
+
+
 def t_migration(
     AGN: AGN_properties,
     m_g: float,
@@ -142,9 +183,11 @@ def t_migration(
     sigma_list: FloatArray,
     r_list: FloatArray,
 ) -> float:
-    """Return type-I migration time [Myr].
+    """Return type-I or gap-opening type-II migration time [Myr].
 
-    Uses ``t = M^2 h^2 / (m Sigma R^2 Omega)`` in cgs units.
+    Low-mass stars use ``t = M^2 h^2 / (m Sigma R^2 Omega)``.
+    Stars satisfying ``K = m^2 / (alpha h^2 M^2) > 11`` use the viscous
+    type-II timescale ``t = 1 / (alpha h^2 Omega)``.
     """
     if m_g <= 0.0 or R <= 0.0:
         raise ValueError("object mass and orbital radius must be positive")
@@ -154,14 +197,29 @@ def t_migration(
     orbital_frequency_rad_s = np.sqrt(
         const.G * smbh_mass_g / R**3
     )
-    migration_time_s = (
-        smbh_mass_g**2
-        * aspect_ratio**2
-        / m_g
-        / surface_density_g_cm2
-        / R**2
-        / orbital_frequency_rad_s
+    gap_parameter = (
+        m_g**2
+        / (
+            DISK_VISCOSITY_ALPHA
+            * aspect_ratio**2
+            * smbh_mass_g**2
+        )
     )
+    if gap_parameter > TYPE_II_GAP_PARAMETER_THRESHOLD:
+        migration_time_s = 1.0 / (
+            DISK_VISCOSITY_ALPHA
+            * aspect_ratio**2
+            * orbital_frequency_rad_s
+        )
+    else:
+        migration_time_s = (
+            smbh_mass_g**2
+            * aspect_ratio**2
+            / m_g
+            / surface_density_g_cm2
+            / R**2
+            / orbital_frequency_rad_s
+        )
     return float(migration_time_s / const.Myr)
 
 
