@@ -76,6 +76,7 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
 
     engine = TDEDynEngine(config)
     averaged_results: list[TDEDynAveragedResult] = []
+    orbital_params_written = False
     simulation_count = 0
     start_time_s = time.time()
 
@@ -105,26 +106,36 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
                 repeat_results.append(result)
                 simulation_count += 1
 
-            averaged_results.append(
-                TDEDynAveragedResult(
-                    float(smbh_mass_msun),
-                    float(nsc_mass_msun),
-                    repeat_results,
-                )
-            )
-            save_intermediate_population_plots(
+            averaged_result = TDEDynAveragedResult(
+                float(smbh_mass_msun),
+                float(nsc_mass_msun),
                 repeat_results,
-                config.output_dir,
-                m_smbh_msun=float(smbh_mass_msun),
-                m_nsc_msun=float(nsc_mass_msun),
             )
+            averaged_results.append(averaged_result)
+            if config.create_intermediate_plots:
+                save_intermediate_population_plots(
+                    repeat_results,
+                    config.output_dir,
+                    m_smbh_msun=float(smbh_mass_msun),
+                    m_nsc_msun=float(nsc_mass_msun),
+                )
+            save_orbital_params(
+                [averaged_result],
+                config.output_dir,
+                append=orbital_params_written,
+            )
+            orbital_params_written = True
+            for result in repeat_results:
+                result.intermediate_initial_population = None
+                result.intermediate_disk_crossing_population = None
+                result.timescale_records = []
+                result.tde_orbital_params = []
             if (
                 grid_index % config.checkpoint_grid_interval == 0
                 or grid_index == grid_size
             ):
                 save_results(averaged_results, config.output_dir)
                 save_timescales(averaged_results, config.output_dir)
-                save_orbital_params(averaged_results, config.output_dir)
 
     runtime_s = time.time() - start_time_s
     print_header("SIMULATION COMPLETE", 72, "#")
@@ -136,7 +147,6 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
     frame = save_results(averaged_results, config.output_dir)
     save_timescales(averaged_results, config.output_dir)
     orbital_params_csv = config.output_dir / "orbital_params.csv"
-    save_orbital_params(averaged_results, config.output_dir)
     timescales_csv = config.output_dir / TIMESCALES_FILENAME
     print_timescale_statistics(timescales_csv)
     save_metadata(

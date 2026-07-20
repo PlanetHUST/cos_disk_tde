@@ -44,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
         "num_repeats",
         nargs="?",
         type=int,
-        default=3,
+        default=1,
         help="Monte Carlo repeats per grid point (default: 3)",
     )
     parser.add_argument(
@@ -65,14 +65,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--smbh-masses",
         type=_parse_mass_vector,
-        default=[1e3, 3e3, 1e4, 3e4, 1e5],
+        default=[3e3, 1e4, 3e4],
         metavar="M1,M2,...",
         help="comma-separated SMBH mass values in Msun",
     )
     parser.add_argument(
         "--nsc-masses",
         type=_parse_mass_vector,
-        default=[1e4, 1e5, 2e5],
+        default=[2e5],
         metavar="M1,M2,...",
         help="comma-separated NSC mass values in Msun",
     )
@@ -110,6 +110,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-visualizations",
         action="store_true",
         help="skip plot generation",
+    )
+    parser.add_argument(
+        "--intermediate-plots",
+        action="store_true",
+        help="write repeat-averaged initial/disk-crossing diagnostic figures",
     )
     parser.add_argument(
         "--no-debug-results",
@@ -169,6 +174,7 @@ def run_cli(argv: Sequence[str] | None = None) -> None:
         damping_cpu_count=arguments.damping_cpu_count,
         checkpoint_grid_interval=arguments.checkpoint_interval,
         create_visualizations=not arguments.no_visualizations,
+        create_intermediate_plots=arguments.intermediate_plots,
         print_debug_results=not arguments.no_debug_results,
     )
     start_time_s = time.time()

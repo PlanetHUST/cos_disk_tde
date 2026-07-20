@@ -66,6 +66,7 @@ class TDEDynConfig:
         damping_cpu_count: int | None = None,
         checkpoint_grid_interval: int = 5,
         create_visualizations: bool = True,
+        create_intermediate_plots: bool = False,
         print_debug_results: bool = True,
     ) -> None:
         if len(smbh_masses_msun) == 0 or len(nsc_masses_msun) == 0:
@@ -111,6 +112,7 @@ class TDEDynConfig:
 
         # Execution and reporting controls
         self.create_visualizations = create_visualizations
+        self.create_intermediate_plots = create_intermediate_plots
         self.print_debug_results = print_debug_results
 
     def get_param_grid(self) -> tuple[FloatArray, FloatArray]:

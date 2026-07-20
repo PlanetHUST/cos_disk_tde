@@ -22,7 +22,6 @@ from .config import (
 )
 from .config import TDEDynConfig
 from .models import (
-    IntermediatePopulation,
     TDEOrbitalParams,
     TDEDynAveragedResult,
     TDEDynSingleResult,
@@ -60,20 +59,9 @@ ORBITAL_PARAM_COLUMNS = (
     "m_smbh_msun",
     "m_nsc_msun",
     "repeat",
-    "stage",
     "task_kind",
-    "outcome",
-    "counted_as_tde",
-    "object_type_flag",
-    "formation_time_myr",
-    "state_time_myr",
-    "damping_time_myr",
-    "migration_time_myr",
-    "relaxation_time_myr",
-    "delivery_time_myr",
     "event_time_myr",
     "semi_major_axis_cm",
-    "final_semi_major_axis_cm",
     "eccentricity",
     "inclination_rad",
     "mass_msun",
@@ -213,8 +201,10 @@ def save_timescales(
 def save_orbital_params(
     averaged_results: Sequence[TDEDynAveragedResult],
     output_dir: Path,
+    *,
+    append: bool = False,
 ) -> pd.DataFrame:
-    """Save staged initial-orbit diagnostics for sampled, damped, and TDE stars."""
+    """Save initial properties for stars that become TDEs."""
     records: list[dict[str, float | int | str]] = []
     for averaged_result in averaged_results:
         for result in averaged_result.results:
@@ -223,105 +213,26 @@ def save_orbital_params(
                 "m_nsc_msun": averaged_result.m_nsc_msun,
                 "repeat": result.repeat_idx,
             }
-            if result.intermediate_initial_population is not None:
-                _append_intermediate_orbital_records(
-                    records,
-                    base,
-                    "initial",
-                    "initial",
-                    result.intermediate_initial_population,
-                )
-            if result.intermediate_disk_crossing_population is not None:
-                _append_intermediate_orbital_records(
-                    records,
-                    base,
-                    "disk_crossing",
-                    "disk_crossing",
-                    result.intermediate_disk_crossing_population,
-                )
-            for timescale_record in result.timescale_records:
-                records.append(
-                    {
-                        **base,
-                        "stage": "damped",
-                        "task_kind": timescale_record["task_kind"],
-                        "outcome": timescale_record["outcome"],
-                        "counted_as_tde": timescale_record["counted_as_tde"],
-                        "object_type_flag": timescale_record["object_type_flag"],
-                        "formation_time_myr": timescale_record["formation_time_myr"],
-                        "state_time_myr": timescale_record["state_time_myr"],
-                        "damping_time_myr": timescale_record["damping_time_myr"],
-                        "migration_time_myr": timescale_record["migration_time_myr"],
-                        "relaxation_time_myr": timescale_record["relaxation_time_myr"],
-                        "delivery_time_myr": timescale_record["delivery_time_myr"],
-                        "event_time_myr": np.nan,
-                        "semi_major_axis_cm": timescale_record[
-                            "initial_semi_major_axis_cm"
-                        ],
-                        "final_semi_major_axis_cm": timescale_record[
-                            "final_semi_major_axis_cm"
-                        ],
-                        "eccentricity": timescale_record["eccentricity"],
-                        "inclination_rad": timescale_record["inclination_rad"],
-                        "mass_msun": timescale_record["mass_msun"],
-                    }
-                )
             for event_time_myr, orbital_params in _iter_tde_orbital_params(result):
                 records.append(
                     {
                         **base,
-                        "stage": "tde",
-                        "outcome": "tde",
-                        "counted_as_tde": True,
-                        "object_type_flag": np.nan,
-                        "formation_time_myr": np.nan,
-                        "state_time_myr": np.nan,
-                        "damping_time_myr": np.nan,
-                        "migration_time_myr": np.nan,
-                        "relaxation_time_myr": np.nan,
-                        "delivery_time_myr": np.nan,
                         "event_time_myr": event_time_myr,
-                        "final_semi_major_axis_cm": np.nan,
                         **orbital_params,
                     }
                 )
     frame = pd.DataFrame.from_records(records, columns=ORBITAL_PARAM_COLUMNS)
     path = output_dir / ORBITAL_PARAMS_FILENAME
-    frame.to_csv(path, index=False, float_format="%.6e")
+    write_header = not append or not path.exists()
+    frame.to_csv(
+        path,
+        index=False,
+        float_format="%.6e",
+        mode="a" if append else "w",
+        header=write_header,
+    )
     print(f"saved: {path}")
     return frame
-
-
-def _append_intermediate_orbital_records(
-    records: list[dict[str, float | int | str]],
-    base: dict[str, float | int],
-    stage: str,
-    task_kind: str,
-    population: IntermediatePopulation,
-) -> None:
-    for index in range(len(population["mass_msun"])):
-        records.append(
-            {
-                **base,
-                "stage": stage,
-                "task_kind": task_kind,
-                "outcome": "",
-                "counted_as_tde": False,
-                "object_type_flag": np.nan,
-                "formation_time_myr": population["formation_time_myr"][index],
-                "state_time_myr": np.nan,
-                "damping_time_myr": np.nan,
-                "migration_time_myr": np.nan,
-                "relaxation_time_myr": np.nan,
-                "delivery_time_myr": np.nan,
-                "event_time_myr": np.nan,
-                "semi_major_axis_cm": population["semi_major_axis_cm"][index],
-                "final_semi_major_axis_cm": np.nan,
-                "eccentricity": population["eccentricity"][index],
-                "inclination_rad": population["inclination_rad"][index],
-                "mass_msun": population["mass_msun"][index],
-            }
-        )
 
 
 def _iter_tde_orbital_params(
@@ -1129,6 +1040,7 @@ def save_metadata(
             "damping_cpu_count": config.damping_cpu_count,
             "checkpoint_grid_interval": (config.checkpoint_grid_interval),
             "create_visualizations": config.create_visualizations,
+            "create_intermediate_plots": config.create_intermediate_plots,
             "print_debug_results": config.print_debug_results,
         },
         "runtime_statistics": runtime_stats,

@@ -663,13 +663,14 @@ class TDEDynEngine:
             population["eccentricity"],
             population["inclination_rad"],
         )
-        result.intermediate_initial_population = _intermediate_population_from_arrays(
-            population["mass_msun"],
-            population["formation_time_myr"],
-            population["semi_major_axis_cm"],
-            population["eccentricity"],
-            population["inclination_rad"],
-        )
+        if self.config.create_intermediate_plots:
+            result.intermediate_initial_population = _intermediate_population_from_arrays(
+                population["mass_msun"],
+                population["formation_time_myr"],
+                population["semi_major_axis_cm"],
+                population["eccentricity"],
+                population["inclination_rad"],
+            )
         selected_indices = np.where(mask)[0]
         result.geo_selected_stars = len(selected_indices)
         result.f_geo = (
@@ -685,15 +686,16 @@ class TDEDynEngine:
             population["eccentricity"][selected_indices],
             population["inclination_rad"][selected_indices],
         )
-        result.intermediate_disk_crossing_population = (
-            _intermediate_population_from_arrays(
-                population["mass_msun"][selected_indices],
-                population["formation_time_myr"][selected_indices],
-                population["semi_major_axis_cm"][selected_indices],
-                population["eccentricity"][selected_indices],
-                population["inclination_rad"][selected_indices],
+        if self.config.create_intermediate_plots:
+            result.intermediate_disk_crossing_population = (
+                _intermediate_population_from_arrays(
+                    population["mass_msun"][selected_indices],
+                    population["formation_time_myr"][selected_indices],
+                    population["semi_major_axis_cm"][selected_indices],
+                    population["eccentricity"][selected_indices],
+                    population["inclination_rad"][selected_indices],
+                )
             )
-        )
         if len(selected_indices) == 0:
             return result
         vprint(
