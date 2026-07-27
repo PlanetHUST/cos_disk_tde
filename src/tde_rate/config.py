@@ -43,8 +43,8 @@ class TDEDynConfig:
     def __init__(
         self,
         # Sampling and runtime controls
-        smbh_masses_msun: Sequence[float] = (1e3, 3e3, 1e4, 3e4, 1e5),
-        nsc_masses_msun: Sequence[float] = (1e4, 1e5, 2e5),
+        smbh_masses_msun: Sequence[float] = (3e3, 1e4, 3e4),
+        nsc_masses_msun: Sequence[float] = (2e5,),
         num_repeats: int = 3,
         duty_cycle_myr: float = 10.0,
         # Output location
@@ -52,9 +52,12 @@ class TDEDynConfig:
         # Stellar and NSC model parameters
         metallicity: float = 0.01,
         initial_stellar_density_gamma: float = 7.0 / 4.0,
-        nsc_radius_pc_at_reference_mass: float = 0.1,
-        nsc_radius_mass_slope: float = 0.13,
-        nsc_radius_reference_mass_msun: float = 1.0,
+        # nsc_radius_pc_at_reference_mass: float = 0.1,
+        nsc_radius_pc_at_reference_mass: float = 3.31,
+        # nsc_radius_mass_slope: float = 0.13,
+        nsc_radius_mass_slope: float = 0.321,
+        # nsc_radius_reference_mass_msun: float = 1.0,
+        nsc_radius_reference_mass_msun: float = 3.6e6,
         # Disk-crossing, resupply, and TDE controls
         use_disk_inner_radius: bool = True,
         dyn_resupply: bool = True,
@@ -62,6 +65,7 @@ class TDEDynConfig:
         reuse_same_orbit_for_copies: bool = True,
         tde_radius_rg: float = 10.0,
         direct_tde: bool = True,
+        consider_type_ii_migration: bool = True,
         # Execution and reporting controls
         damping_cpu_count: int | None = None,
         checkpoint_grid_interval: int = 5,
@@ -78,9 +82,7 @@ class TDEDynConfig:
         if duty_cycle_myr <= 0.0:
             raise ValueError("AGN duty cycle must be positive")
         if not 0.0 < initial_stellar_density_gamma < 3.0:
-            raise ValueError(
-                "initial stellar density gamma must satisfy 0 < gamma < 3"
-            )
+            raise ValueError("initial stellar density gamma must satisfy 0 < gamma < 3")
         if checkpoint_grid_interval <= 0:
             raise ValueError("checkpoint interval must be positive")
 
@@ -109,6 +111,7 @@ class TDEDynConfig:
         self.reuse_same_orbit_for_copies = reuse_same_orbit_for_copies
         self.tde_radius_rg = tde_radius_rg
         self.direct_tde = direct_tde
+        self.consider_type_ii_migration = consider_type_ii_migration
 
         # Execution and reporting controls
         self.create_visualizations = create_visualizations

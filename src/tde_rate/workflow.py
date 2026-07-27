@@ -68,6 +68,7 @@ def run_simulation(config: TDEDynConfig | None = None) -> pd.DataFrame:
     print(f"Repeats per point: {config.num_repeats}")
     print(f"Dynamic resupply: {config.dyn_resupply}")
     print(f"Direct TDE flag: {config.direct_tde}")
+    print(f"Type-II migration: {config.consider_type_ii_migration}")
     print(f"Output directory: {config.output_dir}")
     print(
         "Damping CPU count: "

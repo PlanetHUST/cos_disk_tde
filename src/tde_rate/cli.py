@@ -99,6 +99,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="count stars ending inside the configured TDE radius",
     )
+    parser.add_argument(
+        "--no-type-ii-migration",
+        action="store_true",
+        help="force all embedded stars to use type-I migration",
+    )
     parser.add_argument("--tde-radius-rg", type=float, default=10.0)
     parser.add_argument(
         "--checkpoint-interval",
@@ -171,6 +176,7 @@ def run_cli(argv: Sequence[str] | None = None) -> None:
         reuse_same_orbit_for_copies=(not arguments.resample_copy_orbits),
         tde_radius_rg=arguments.tde_radius_rg,
         direct_tde=arguments.direct_tde,
+        consider_type_ii_migration=not arguments.no_type_ii_migration,
         damping_cpu_count=arguments.damping_cpu_count,
         checkpoint_grid_interval=arguments.checkpoint_interval,
         create_visualizations=not arguments.no_visualizations,

@@ -49,6 +49,26 @@ TDE_EVENT_COLUMNS = (
 TDE_MASS_RATE_VS_TIME_PLOT_FILENAME = "tde_mass_rate_vs_time.png"
 TDE_MASS_RATE_PRIMARY_PLOT_FILENAME = "tde_mass_rate_vs_time_primary.png"
 TDE_MASS_RATE_COPIED_PLOT_FILENAME = "tde_mass_rate_vs_time_copied.png"
+ARTICLE_PRESENTATION_ONLY = True
+ARTICLE_FIGURE_FILENAMES = {
+    COMBINED_TIMESCALE_HISTOGRAM_FILENAME,
+    "tde_hist_mass.png",
+}
+
+PRESENTATION_LABEL_FONTSIZE = 24
+PRESENTATION_TICK_FONTSIZE = 20
+PRESENTATION_LEGEND_FONTSIZE = 18
+PRESENTATION_LINE_WIDTH = 3.0
+PRESENTATION_REFERENCE_LINE_WIDTH = 2.4
+PRESENTATION_SPINE_LINE_WIDTH = 1.3
+PRESENTATION_TICK_WIDTH = 1.2
+PRESENTATION_GRID_LINE_WIDTH = 0.8
+PRESENTATION_SAVE_DPI = 300
+PRESENTATION_TIGHT_PAD = 1.5
+PRESENTATION_FONT_FAMILY = "Arial"
+PRESENTATION_SERIF_FONTS = ["Times New Roman"]
+PRESENTATION_MATH_FONTSET = "stix"
+
 EDDINGTON_LUMINOSITY_ERG_S_PER_MSUN = 1.26e38
 ACCRETION_EFFICIENCY = 0.1
 SPEED_OF_LIGHT_CM_S = 2.99792458e10
@@ -136,6 +156,75 @@ INTERMEDIATE_HEATMAP_SPECS = (
         r"Initial eccentricity $e$",
     ),
 )
+
+
+def _is_article_figure(filename: str) -> bool:
+    return filename in ARTICLE_FIGURE_FILENAMES
+
+
+def _should_write_figure(filename: str) -> bool:
+    return (not ARTICLE_PRESENTATION_ONLY) or _is_article_figure(filename)
+
+
+def _apply_presentation_font_style() -> None:
+    if not ARTICLE_PRESENTATION_ONLY:
+        return
+    # plt.rcParams.update(
+    #     {
+    #         "text.usetex": True,
+    #         "font.family": PRESENTATION_FONT_FAMILY,
+    #         "font.serif": PRESENTATION_SERIF_FONTS,
+    #         "mathtext.fontset": PRESENTATION_MATH_FONTSET,
+    #         # "axes.labelweight": "bold",
+    #         # "font.weight": "bold",
+    #     }
+    # )
+    plt.rcParams.update(
+        {
+            "text.usetex": True,
+            "font.family": "Arial",
+            "font.size": 16,
+            "axes.labelsize": 16,
+            "xtick.labelsize": 16,
+            "ytick.labelsize": 16,
+            "legend.fontsize": 14,
+            "axes.titlesize": 16,
+        }
+    )
+
+
+def _apply_presentation_axes(axis: Any) -> None:
+    axis.tick_params(
+        axis="both",
+        which="major",
+        labelsize=PRESENTATION_TICK_FONTSIZE,
+        width=PRESENTATION_TICK_WIDTH,
+    )
+    axis.tick_params(
+        axis="both",
+        which="minor",
+        width=PRESENTATION_TICK_WIDTH,
+    )
+    for spine in axis.spines.values():
+        spine.set_visible(True)
+        spine.set_linewidth(PRESENTATION_SPINE_LINE_WIDTH)
+
+
+def _hide_irrelevant_article_figures(output_dir: Path) -> None:
+    if not ARTICLE_PRESENTATION_ONLY or not output_dir.exists():
+        return
+    hidden_dir = output_dir / "hidden"
+    for path in sorted(output_dir.glob("*.png")):
+        if _is_article_figure(path.name):
+            continue
+        hidden_dir.mkdir(parents=True, exist_ok=True)
+        destination = hidden_dir / path.name
+        counter = 1
+        while destination.exists():
+            destination = hidden_dir / f"{path.stem}_{counter}{path.suffix}"
+            counter += 1
+        path.replace(destination)
+        print(f"hidden: {path} -> {destination}")
 
 
 def save_results(
@@ -387,7 +476,7 @@ def _plot_intermediate_distribution(
         )
     axis.set_xlabel(xlabel)
     axis.set_ylabel("Mean number of stars per bin")
-    axis.set_title("Initial population diagnostics")
+    # axis.set_title("Initial population diagnostics")
     figure.tight_layout()
     figure.savefig(output_path, dpi=200, bbox_inches="tight")
     plt.close(figure)
@@ -446,7 +535,7 @@ def _plot_intermediate_heatmap(
         )
     axis.set_xlabel(xlabel)
     axis.set_ylabel(ylabel)
-    axis.set_title("Initial population diagnostics")
+    # axis.set_title("Initial population diagnostics")
     figure.tight_layout()
     figure.savefig(output_path, dpi=200, bbox_inches="tight")
     plt.close(figure)
@@ -547,6 +636,8 @@ def create_orbital_param_pdfs_from_csv(
     output_dir: Path,
 ) -> None:
     """Plot repeat-median PDFs of disrupted stars' initial properties."""
+    _apply_presentation_font_style()
+    _hide_irrelevant_article_figures(output_dir)
     frame = pd.read_csv(orbital_params_csv)
     if "stage" in frame.columns:
         frame = frame[frame["stage"] == "tde"]
@@ -565,24 +656,26 @@ def create_orbital_param_pdfs_from_csv(
         xlabel,
         value_range,
     ) in ORBITAL_PLOT_SPECS.items():
-        _create_orbital_param_plot(
-            frame,
-            column,
-            xlabel,
-            value_range,
-            num_repeats,
-            output_dir / pdf_filename,
-            normalized_per_log_bin=False,
-        )
-        _create_orbital_param_plot(
-            frame,
-            column,
-            xlabel,
-            value_range,
-            num_repeats,
-            output_dir / hist_filename,
-            normalized_per_log_bin=True,
-        )
+        if _should_write_figure(pdf_filename):
+            _create_orbital_param_plot(
+                frame,
+                column,
+                xlabel,
+                value_range,
+                num_repeats,
+                output_dir / pdf_filename,
+                normalized_per_log_bin=False,
+            )
+        if _should_write_figure(hist_filename):
+            _create_orbital_param_plot(
+                frame,
+                column,
+                xlabel,
+                value_range,
+                num_repeats,
+                output_dir / hist_filename,
+                normalized_per_log_bin=True,
+            )
 
 
 def _create_orbital_param_plot(
@@ -633,7 +726,7 @@ def _create_orbital_param_plot(
             axis.stairs(
                 normalized_count_per_log_bin,
                 bin_edges,
-                linewidth=2.0,
+                linewidth=PRESENTATION_LINE_WIDTH,
                 label=label,
             )
             plotted = True
@@ -659,7 +752,7 @@ def _create_orbital_param_plot(
         (line,) = axis.plot(
             bin_centers,
             median,
-            linewidth=2.0,
+            linewidth=PRESENTATION_LINE_WIDTH,
             label=label,
         )
         axis.fill_between(
@@ -677,16 +770,23 @@ def _create_orbital_param_plot(
     axis.set_yscale("log")
     if value_range is not None:
         axis.set_xlim(*value_range)
-    axis.set_xlabel(xlabel)
+    axis.set_ylim([1e-4, 1e0])
+    axis.set_xlabel(xlabel, fontsize=PRESENTATION_LABEL_FONTSIZE)
     axis.set_ylabel(
-        "Normalized number per log bin"
-        if normalized_per_log_bin
-        else "Probability density"
+        "Normalized number" if normalized_per_log_bin else "Probability density",
+        fontsize=PRESENTATION_LABEL_FONTSIZE,
     )
-    axis.set_title("Initial properties of tidally disrupted stars")
-    axis.grid(True, which="both", alpha=0.3, linestyle=":")
+    # axis.set_title("Initial properties of tidally disrupted stars")
+    axis.grid(
+        True,
+        which="both",
+        alpha=0.3,
+        linestyle=":",
+        linewidth=PRESENTATION_GRID_LINE_WIDTH,
+    )
+    _apply_presentation_axes(axis)
     if plotted:
-        axis.legend(frameon=False, fontsize=8)
+        axis.legend(frameon=True, fontsize=PRESENTATION_LEGEND_FONTSIZE)
     else:
         axis.text(
             0.5,
@@ -696,8 +796,8 @@ def _create_orbital_param_plot(
             va="center",
             transform=axis.transAxes,
         )
-    figure.tight_layout()
-    figure.savefig(output_path, dpi=200, bbox_inches="tight")
+    figure.tight_layout(pad=PRESENTATION_TIGHT_PAD)
+    figure.savefig(output_path, dpi=PRESENTATION_SAVE_DPI, bbox_inches="tight")
     plt.close(figure)
     print(f"saved: {output_path}")
 
@@ -711,17 +811,24 @@ def _plot_kroupa_reference(
 ) -> None:
     """Overlay the canonical broken-power-law Kroupa initial mass function."""
     mass = np.geomspace(value_min, value_max, 400)
-    d_number_d_mass = np.where(
-        mass < 0.5,
-        mass**-1.3,
-        0.5 * mass**-2.3,
-    )
+    # d_number_d_mass = np.where(
+    #     mass < 0.5,
+    #     mass**-1.3,
+    #     0.5 * mass**-2.3,
+    # )
+    d_number_d_mass = mass**-2.3
     if normalized_per_log_bin:
         reference = mass * d_number_d_mass
         reference /= _trapezoidal_integral(reference, np.log(mass))
     else:
         reference = d_number_d_mass / _trapezoidal_integral(d_number_d_mass, mass)
-    axis.plot(mass, reference, "k--", linewidth=1.8, label="Kroupa IMF")
+    axis.plot(
+        mass,
+        reference,
+        "k--",
+        linewidth=PRESENTATION_REFERENCE_LINE_WIDTH,
+        label="Kroupa IMF",
+    )
 
 
 def _trapezoidal_integral(values: np.ndarray, coordinates: np.ndarray) -> float:
@@ -756,6 +863,8 @@ def create_timescale_histograms_from_csv(
     output_dir: Path,
 ) -> None:
     """Create median cumulative-mass profiles across repeated runs."""
+    _apply_presentation_font_style()
+    _hide_irrelevant_article_figures(output_dir)
     frame = pd.read_csv(timescales_csv)
     duty_cycle_myr, num_repeats = _read_output_sampling(
         timescales_csv,
@@ -770,6 +879,8 @@ def create_timescale_histograms_from_csv(
         filename: str,
         show_mass_rate: bool = False,
     ) -> None:
+        if not _should_write_figure(filename):
+            return
         figure, axis = plt.subplots(figsize=(10, 6))
         plotted = False
         has_positive_mass = False
@@ -815,7 +926,7 @@ def create_timescale_histograms_from_csv(
             (line,) = axis.plot(
                 time_grid_myr,
                 median_mass,
-                linewidth=2.0,
+                linewidth=PRESENTATION_LINE_WIDTH,
                 label=(
                     (
                         f"{grid_point.m_smbh_msun:.0e}, "
@@ -851,14 +962,17 @@ def create_timescale_histograms_from_csv(
                 va="center",
                 transform=axis.transAxes,
             )
-        axis.set_xlabel(r"TDE event time $t\,[{\rm Myr}]$", fontsize=16)
+        axis.set_xlabel(
+            r"TDE event time $t\,[{\rm Myr}]$",
+            fontsize=PRESENTATION_LABEL_FONTSIZE,
+        )
         axis.set_ylabel(
             (
                 r"TDE mass rate $M_{\rm TDE}(<t)/t$ " r"$[M_\odot\,{\rm yr}^{-1}]$"
                 if show_mass_rate
                 else r"Cumulative TDE mass $[M_\odot]$"
             ),
-            fontsize=16,
+            fontsize=PRESENTATION_LABEL_FONTSIZE,
         )
         axis.set_xlim(0.0, duty_cycle_myr)
         if has_positive_mass:
@@ -870,29 +984,33 @@ def create_timescale_histograms_from_csv(
                     positive_rates.min() / 1.5,
                     positive_rates.max() * 1.5,
                 )
-        axis.tick_params(axis="both", which="major", labelsize=14)
-        axis.set_title(title, fontsize=18, pad=14)
-        axis.grid(True, which="both", alpha=0.5, linestyle=":", linewidth=1.0)
-        axis.spines["top"].set_visible(False)
-        axis.spines["right"].set_visible(False)
-        if plotted:
-            axis.legend(
-                loc="best",
-                frameon=False,
-                fontsize=12 if show_mass_rate else 14,
-                ncols=2 if show_mass_rate else 1,
-                title=(
-                    (
-                        r"$M_{\rm BH}, M_{\rm NSC}\ [M_\odot]$; "
-                        r"rate at $t_{\rm duty}$"
-                    )
-                    if show_mass_rate
-                    else None
-                ),
-            )
-        figure.tight_layout()
+        # axis.set_title(title, fontsize=18, pad=14)
+        axis.grid(
+            True,
+            which="both",
+            alpha=0.5,
+            linestyle=":",
+            linewidth=PRESENTATION_GRID_LINE_WIDTH,
+        )
+        _apply_presentation_axes(axis)
+        # if plotted:
+        #     axis.legend(
+        #         loc="lower right",
+        #         frameon=True,
+        #         fontsize=PRESENTATION_LEGEND_FONTSIZE,
+        #         ncols=2 if show_mass_rate else 1,
+        #         title=(
+        #             (
+        #                 r"$M_{\rm BH}, M_{\rm NSC}\ [M_\odot]$; "
+        #                 r"rate at $t_{\rm duty}$"
+        #             )
+        #             if show_mass_rate
+        #             else None
+        #         ),
+        #     )
+        figure.tight_layout(pad=PRESENTATION_TIGHT_PAD)
         path = output_dir / filename
-        figure.savefig(path, dpi=200, bbox_inches="tight")
+        figure.savefig(path, dpi=PRESENTATION_SAVE_DPI, bbox_inches="tight")
         plt.close(figure)
         print(f"saved: {path}")
 
@@ -1037,6 +1155,7 @@ def save_metadata(
             "reuse_same_orbit_for_copies": (config.reuse_same_orbit_for_copies),
             "tde_radius_rg": config.tde_radius_rg,
             "direct_tde": config.direct_tde,
+            "consider_type_ii_migration": config.consider_type_ii_migration,
             "damping_cpu_count": config.damping_cpu_count,
             "checkpoint_grid_interval": (config.checkpoint_grid_interval),
             "create_visualizations": config.create_visualizations,
@@ -1053,6 +1172,10 @@ def save_metadata(
 
 def create_visualizations_from_csv(csv_file: Path, output_dir: Path) -> None:
     """Create result-oriented TDE-rate plots."""
+    if ARTICLE_PRESENTATION_ONLY:
+        _hide_irrelevant_article_figures(output_dir)
+        print("rate-grid visualizations skipped in article-presentation mode")
+        return
     frame = pd.read_csv(csv_file)
     if frame.empty:
         print("No data to visualize")
@@ -1085,7 +1208,7 @@ def create_visualizations_from_csv(csv_file: Path, output_dir: Path) -> None:
         axis.set_yscale("log")
     axis.set_xlabel(r"$M_{\rm SMBH}\,[M_\odot]$")
     axis.set_ylabel(r"TDE mass rate $[M_\odot/{\rm Myr}]$")
-    axis.set_title("Dynamical TDE mass rate vs SMBH mass")
+    # axis.set_title("Dynamical TDE mass rate vs SMBH mass")
     axis.grid(True, alpha=0.3, linestyle="--")
     axis.legend()
     figure.tight_layout()
@@ -1106,7 +1229,7 @@ def create_visualizations_from_csv(csv_file: Path, output_dir: Path) -> None:
         cmap="viridis",
     )
     _configure_heatmap_axes(axis, smbh_masses_msun, nsc_masses_msun)
-    axis.set_title(r"Dynamical TDE mass rate $[M_\odot/{\rm Myr}]$")
+    # axis.set_title(r"Dynamical TDE mass rate $[M_\odot/{\rm Myr}]$")
     figure.colorbar(image)
     figure.tight_layout()
     figure.savefig(

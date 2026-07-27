@@ -182,12 +182,14 @@ def t_migration(
     h_list: FloatArray,
     sigma_list: FloatArray,
     r_list: FloatArray,
+    consider_type_ii: bool = True,
 ) -> float:
     """Return type-I or gap-opening type-II migration time [Myr].
 
     Low-mass stars use ``t = M^2 h^2 / (m Sigma R^2 Omega)``.
     Stars satisfying ``K = m^2 / (alpha h^2 M^2) > 11`` use the viscous
-    type-II timescale ``t = 1 / (alpha h^2 Omega)``.
+    type-II timescale ``t = 1 / (alpha h^2 Omega)`` when
+    ``consider_type_ii`` is enabled.
     """
     if m_g <= 0.0 or R <= 0.0:
         raise ValueError("object mass and orbital radius must be positive")
@@ -205,7 +207,7 @@ def t_migration(
             * smbh_mass_g**2
         )
     )
-    if gap_parameter > TYPE_II_GAP_PARAMETER_THRESHOLD:
+    if consider_type_ii and gap_parameter > TYPE_II_GAP_PARAMETER_THRESHOLD:
         migration_time_s = 1.0 / (
             DISK_VISCOSITY_ALPHA
             * aspect_ratio**2

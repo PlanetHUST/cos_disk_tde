@@ -419,26 +419,27 @@ class TDEDynEngine:
                     )
                 else:
                     embedded_stars_primary += 1
-                    type_ii_threshold_msun = helpers.type_ii_threshold_mass_msun(
-                        agn_properties,
-                        damping_result["initial_semi_major_axis_cm"],
-                        h_list=aspect_ratio,
-                        r_list=radius_cm,
-                    )
-                    min_type_ii_threshold_msun = min(
-                        min_type_ii_threshold_msun,
-                        type_ii_threshold_msun,
-                    )
-                    gap_parameter = helpers.type_ii_gap_parameter(
-                        agn_properties,
-                        damping_result["mass_g"],
-                        damping_result["initial_semi_major_axis_cm"],
-                        h_list=aspect_ratio,
-                        r_list=radius_cm,
-                    )
-                    if gap_parameter > helpers.TYPE_II_GAP_PARAMETER_THRESHOLD:
-                        type_ii_migration_count += 1
-                        type_ii_migration_mass_msun += damping_result["mass_msun"]
+                    if self.config.consider_type_ii_migration:
+                        type_ii_threshold_msun = helpers.type_ii_threshold_mass_msun(
+                            agn_properties,
+                            damping_result["initial_semi_major_axis_cm"],
+                            h_list=aspect_ratio,
+                            r_list=radius_cm,
+                        )
+                        min_type_ii_threshold_msun = min(
+                            min_type_ii_threshold_msun,
+                            type_ii_threshold_msun,
+                        )
+                        gap_parameter = helpers.type_ii_gap_parameter(
+                            agn_properties,
+                            damping_result["mass_g"],
+                            damping_result["initial_semi_major_axis_cm"],
+                            h_list=aspect_ratio,
+                            r_list=radius_cm,
+                        )
+                        if gap_parameter > helpers.TYPE_II_GAP_PARAMETER_THRESHOLD:
+                            type_ii_migration_count += 1
+                            type_ii_migration_mass_msun += damping_result["mass_msun"]
                     migration_time_myr = helpers.t_migration(
                         agn_properties,
                         damping_result["mass_g"],
@@ -446,6 +447,7 @@ class TDEDynEngine:
                         h_list=aspect_ratio,
                         sigma_list=surface_density_g_cm2,
                         r_list=radius_cm,
+                        consider_type_ii=self.config.consider_type_ii_migration,
                     )
                     event_time_myr = (
                         migration_time_myr + damping_result["final_time_myr"]
@@ -547,26 +549,27 @@ class TDEDynEngine:
                 )
             else:
                 embedded_stars_copies += 1
-                type_ii_threshold_msun = helpers.type_ii_threshold_mass_msun(
-                    agn_properties,
-                    damping_result["initial_semi_major_axis_cm"],
-                    h_list=aspect_ratio,
-                    r_list=radius_cm,
-                )
-                min_type_ii_threshold_msun = min(
-                    min_type_ii_threshold_msun,
-                    type_ii_threshold_msun,
-                )
-                gap_parameter = helpers.type_ii_gap_parameter(
-                    agn_properties,
-                    damping_result["mass_g"],
-                    damping_result["initial_semi_major_axis_cm"],
-                    h_list=aspect_ratio,
-                    r_list=radius_cm,
-                )
-                if gap_parameter > helpers.TYPE_II_GAP_PARAMETER_THRESHOLD:
-                    type_ii_migration_count += 1
-                    type_ii_migration_mass_msun += damping_result["mass_msun"]
+                if self.config.consider_type_ii_migration:
+                    type_ii_threshold_msun = helpers.type_ii_threshold_mass_msun(
+                        agn_properties,
+                        damping_result["initial_semi_major_axis_cm"],
+                        h_list=aspect_ratio,
+                        r_list=radius_cm,
+                    )
+                    min_type_ii_threshold_msun = min(
+                        min_type_ii_threshold_msun,
+                        type_ii_threshold_msun,
+                    )
+                    gap_parameter = helpers.type_ii_gap_parameter(
+                        agn_properties,
+                        damping_result["mass_g"],
+                        damping_result["initial_semi_major_axis_cm"],
+                        h_list=aspect_ratio,
+                        r_list=radius_cm,
+                    )
+                    if gap_parameter > helpers.TYPE_II_GAP_PARAMETER_THRESHOLD:
+                        type_ii_migration_count += 1
+                        type_ii_migration_mass_msun += damping_result["mass_msun"]
                 migration_time_myr = helpers.t_migration(
                     agn_properties,
                     damping_result["mass_g"],
@@ -574,6 +577,7 @@ class TDEDynEngine:
                     r_list=radius_cm,
                     sigma_list=surface_density_g_cm2,
                     h_list=aspect_ratio,
+                    consider_type_ii=self.config.consider_type_ii_migration,
                 )
                 event_time_myr = migration_time_myr + damping_result["final_time_myr"]
                 if event_time_myr < agn_properties.AGNlifetime:
@@ -609,7 +613,9 @@ class TDEDynEngine:
         vprint(f" embedded stars copies: {embedded_stars_copies}")
         vprint(f" tde masses primary: " f"{result.tde_mass_primary_msun:.3e} Msun")
         vprint(f" tde masses copies: " f"{result.copy_tde_mass_msun:.3e} Msun")
-        if np.isfinite(min_type_ii_threshold_msun):
+        if not self.config.consider_type_ii_migration:
+            vprint(" type-II migration: disabled; all stars use type-I migration")
+        elif np.isfinite(min_type_ii_threshold_msun):
             vprint(
                 " type-II migration minimum threshold mass: "
                 f"{min_type_ii_threshold_msun:.3e} Msun"
